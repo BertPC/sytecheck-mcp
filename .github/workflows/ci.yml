@@ -71,9 +71,15 @@ jobs:
         run: |
           mkdir -p /tmp/csharp && cd /tmp/csharp
           dotnet new console --force -o . >/dev/null
-          # The example is written for dotnet-script's top-level form; `Args` is
-          # that host's argument list, and `args` is the console template's.
-          sed -e 's/^#!.*//' -e 's/\bArgs\b/args/g' \
+          # The example targets dotnet-script, whose top-level `Args` is an
+          # IList<string>. A console project's `args` is a string[], so the two
+          # differ in more than name: `.Count` is a property on one and a LINQ
+          # extension method on the other, and renaming alone yields code that
+          # does not compile. Order matters — `.Count` must be rewritten before
+          # the bare rename, or the first rule no longer matches.
+          sed -e 's/^#!.*//' \
+              -e 's/\bArgs\.Count\b/args.Length/g' \
+              -e 's/\bArgs\b/args/g' \
             "$GITHUB_WORKSPACE/examples/Scan.csx" > Program.cs
           dotnet build --nologo -v quiet
 
