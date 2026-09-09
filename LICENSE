@@ -19,16 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-TRADEMARKS
-
-This license covers the source code in this repository only. "SyteCheck", the
-SyteCheck name, logo, and mark are trademarks of Ascent Web Solutions, and no
-right to use them is granted by this license. You may state that your software
-works with SyteCheck; you may not use the name or mark in a way that suggests
-endorsement, affiliation, or origin.
-
-The SyteCheck service itself is not covered by this license. Its use is governed
-by the Terms of Service at https://sytecheck.app/terms.

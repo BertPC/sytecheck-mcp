@@ -180,4 +180,5 @@ and cannot do, and how to report a vulnerability.
 
 MIT — see [LICENSE](LICENSE). The licence covers this code; the SyteCheck name and
 mark are trademarks of Ascent Web Solutions, and use of the service is governed by
-its [Terms of Service](https://sytecheck.app/terms).
+its [Terms of Service](https://sytecheck.app/terms). See [TRADEMARK.md](TRADEMARK.md)
+for the full terms.
