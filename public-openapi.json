@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "SyteCheck API",
-    "description": "\nThe SyteCheck public API runs comprehensive, scored audits of any website \u2014\nSEO, accessibility, performance, security headers, and more.\n\n## Authentication\n\nAll `/api/v1` routes accept either a session JWT or a personal **API key** via the\n`Authorization: Bearer <token>` header. Generate API keys from your account settings\nor the `POST /api/v1/keys` endpoint. See the getting-started guide in `docs/PUBLIC_API.md`.\n\n## Plans and quotas\n\nEvery account has a monthly scan quota, a set of analysis categories, and a concurrency\nlimit set by its plan. **The API itself is available on every plan, including Free** \u2014\nan API key confers no allowance of its own, reaching the same quota and the same\ncategories as the plan it belongs to. Exceeding the\nmonthly quota returns `429 Too Many Requests` with a `Retry-After` header giving the\ntime until the calendar month rolls over. Requesting a category your plan does not\ninclude returns `403 Forbidden`. A separate daily burst cap also applies as abuse and\ninfrastructure protection. See `docs/PUBLIC_API.md` for the current limits.\n\n## Webhooks\n\nPass a `webhook_url` when submitting a scan to receive the completed result payload\nby HTTP POST as soon as analysis finishes; delivery is retried on failure. Webhooks\nrequire the **Agency** plan \u2014 on any other plan the field is refused with `403` and\nthe scan should be submitted without it, then polled or streamed for completion.\n",
+    "description": "\nThe SyteCheck public API runs comprehensive, scored audits of any website \u2014\nSEO, accessibility, performance, security headers, and more.\n\n## Authentication\n\nAll `/api/v1` routes accept either a session JWT or a personal **API key** via the\n`Authorization: Bearer <token>` header. Generate API keys from your account settings\nor the `POST /api/v1/keys` endpoint. A getting-started guide, client examples, and an\nMCP server live at <https://github.com/BertPC/sytecheck-mcp>.\n\n## Plans and quotas\n\nEvery account has a monthly scan quota, a set of analysis categories, and a concurrency\nlimit set by its plan. **The API itself is available on every plan, including Free** \u2014\nan API key confers no allowance of its own, reaching the same quota and the same\ncategories as the plan it belongs to. Exceeding the\nmonthly quota returns `429 Too Many Requests` with a `Retry-After` header giving the\ntime until the calendar month rolls over. Requesting a category your plan does not\ninclude returns `403 Forbidden`. A separate daily burst cap also applies as abuse and\ninfrastructure protection. Current per-plan limits come from `GET /api/v1/billing/plans`\nand `GET /users/me/usage` \u2014 do not hard-code them.\n\n## Webhooks\n\nPass a `webhook_url` when submitting a scan to receive the completed result payload\nby HTTP POST as soon as analysis finishes; delivery is retried on failure. Webhooks\nrequire the **Agency** plan \u2014 on any other plan the field is refused with `403` and\nthe scan should be submitted without it, then polled or streamed for completion.\n",
     "version": "1.0.0"
   },
   "paths": {
@@ -12,7 +12,6 @@
           "health"
         ],
         "summary": "Health",
-        "description": "Return service health. Checks DB connectivity.",
         "operationId": "health_health_get",
         "responses": {
           "200": {
@@ -36,8 +35,8 @@
           "meta",
           "meta"
         ],
-        "summary": "Public Config",
-        "description": "Return non-secret runtime configuration for the web UI.",
+        "summary": "Get public configuration",
+        "description": "Return client configuration needed before signing in, including the IP addresses\nour scanners originate from \u2014 useful if you need to allow-list them so scans of\nyour own site are not blocked.",
         "operationId": "public_config_api_v1_config_get",
         "responses": {
           "200": {
@@ -109,7 +108,8 @@
               }
             }
           }
-        }
+        },
+        "description": "Create an account and return access and refresh tokens. A verification email is sent; scans require a verified address."
       }
     },
     "/auth/login": {
@@ -117,7 +117,7 @@
         "tags": [
           "auth"
         ],
-        "summary": "Login",
+        "summary": "Sign in",
         "operationId": "login_auth_login_post",
         "requestBody": {
           "content": {
@@ -150,7 +150,8 @@
               }
             }
           }
-        }
+        },
+        "description": "Exchange an email and password for access and refresh tokens."
       }
     },
     "/auth/refresh": {
@@ -158,7 +159,7 @@
         "tags": [
           "auth"
         ],
-        "summary": "Refresh",
+        "summary": "Refresh tokens",
         "operationId": "refresh_auth_refresh_post",
         "requestBody": {
           "content": {
@@ -191,7 +192,8 @@
               }
             }
           }
-        }
+        },
+        "description": "Exchange a refresh token for a new access token. Refresh tokens rotate on use."
       }
     },
     "/auth/password-reset/request": {
@@ -199,7 +201,7 @@
         "tags": [
           "auth"
         ],
-        "summary": "Request Password Reset",
+        "summary": "Request a password reset",
         "operationId": "request_password_reset_auth_password_reset_request_post",
         "parameters": [
           {
@@ -243,7 +245,8 @@
               }
             }
           }
-        }
+        },
+        "description": "Send a password reset link. Always succeeds, whether or not the address has an account."
       }
     },
     "/auth/password-reset/confirm": {
@@ -251,8 +254,8 @@
         "tags": [
           "auth"
         ],
-        "summary": "Confirm Password Reset",
-        "description": "Set a new password from a reset token, and confirm the address while at it.\n\nRedeeming a link mailed to an address is proof of control over it, which is\nexactly what verification asserts \u2014 the same reasoning already applied to Google\nsign-in. Without the stamp, an unverified account that resets its password lands\nin a dead end: a working sign-in whose every scan is refused, and no verification\nlink in flight. An already-verified stamp is left alone.",
+        "summary": "Complete a password reset",
+        "description": "Set a new password using the token from a reset link.",
         "operationId": "confirm_password_reset_auth_password_reset_confirm_post",
         "requestBody": {
           "content": {
@@ -286,8 +289,8 @@
         "tags": [
           "auth"
         ],
-        "summary": "Accept Invitation",
-        "description": "Take possession of an admin-created account: set its first password.\n\nRedeeming the link also stamps ``email_verified_at`` \u2014 the link was mailed to\nthe address, so clicking it proves control of it \u2014 and signs the invitee in. The\naccount has never had a session, so there is none to invalidate, and asking for\nthe password again immediately after setting it is friction with no security\nvalue.\n\nUnknown, expired, and already-used tokens all answer with the *same* 400: the\nendpoint takes a secret and nothing else, so it must never become a way to learn\nwhich addresses have accounts.\n\nA disabled account is refused with 403 and the token is left unused, so\nre-enabling makes the same link work again \u2014 that is the recovery path after an\ninvitation is revoked by mistake. Setting a password on an account that already\nhas one is deliberately allowed: possession of the mailed link is exactly the\nstandard password reset runs on, and refusing would strand someone who used the\nreset flow first.",
+        "summary": "Accept an invitation",
+        "description": "Set a password using an invitation token and sign in. The address is already\nconfirmed, so no separate verification step is needed.\n\nUnknown, expired, and already-used tokens are all refused identically, so this\ncannot be used to discover which addresses have accounts.",
         "operationId": "accept_invitation_auth_accept_invitation_post",
         "requestBody": {
           "content": {
@@ -328,8 +331,8 @@
         "tags": [
           "auth"
         ],
-        "summary": "Verify Email",
-        "description": "Confirm an email address from a verification token.\n\nServes both verification flows. A token with no ``new_email`` confirms the\naddress the account already has: it marks the token used and stamps\n``email_verified_at``, and re-verifying an already-verified account is a no-op\nsuccess so the link stays idempotent.\n\nA token carrying a ``new_email`` is the second half of an address change \u2014 this\nis the point at which ``users.email`` actually moves, and the verified stamp is\nrefreshed because it now describes a newly proved address. Uniqueness is\nre-checked here and not only at request time: the token is valid for 24 hours,\nduring which someone else may have registered the address.\n\nA token that is unknown, already used, or expired is rejected with 400.",
+        "summary": "Verify an email address",
+        "description": "Confirm an email address using the token from a verification link.",
         "operationId": "verify_email_auth_verify_email_post",
         "requestBody": {
           "content": {
@@ -363,8 +366,8 @@
         "tags": [
           "auth"
         ],
-        "summary": "Resend Email Verification",
-        "description": "Re-send the verification link to the authenticated user's email.\n\nRequires authentication (an unverified user can still sign in), which avoids\nthe email-enumeration concern of the by-email password-reset flow. Already-\nverified accounts short-circuit without sending another email.",
+        "summary": "Resend the verification email",
+        "description": "Send a fresh verification link to the account's address.",
         "operationId": "resend_email_verification_auth_verify_email_resend_post",
         "security": [
           {
@@ -411,8 +414,8 @@
         "tags": [
           "auth"
         ],
-        "summary": "Change Email",
-        "description": "Begin moving the account to a different email address.\n\nDeliberately returns **202, not 200**: nothing has changed yet. A confirmation\nlink goes to the new address and ``users.email`` moves only when it is clicked\n(``POST /auth/verify-email``). Verifying before applying is what keeps a typo\nfrom stranding an account on an inbox its owner cannot reach \u2014 password-reset\nand every other recovery path would follow the bad address \u2014 and stops an\naccount from ever pointing at an address its owner does not control.\n\nRe-authenticates first, mirroring ``POST /auth/change-password``. A live\nsession is not enough on its own: the confirmation link goes to the address\nthe requester named, so whoever holds a stolen session would receive it, and\nfrom a changed address every recovery path \u2014 password reset included \u2014 belongs\nto them. Accounts that sign in with Google have no password to re-enter and\nskip this; their recovery path is Google's, not ours.\n\nRate-limited per hour rather than per minute: each call also mails the current\naddress, and that notice must not become a way to flood someone's inbox.",
+        "summary": "Change the account's email address",
+        "description": "Begin moving the account to a new email address. Returns `202`: nothing has\nchanged yet. A confirmation link is sent to the new address and the change is\napplied only when that link is used, so a mistyped address cannot lock you out.\n\nAccounts with a password must re-enter it.",
         "operationId": "change_email_auth_change_email_post",
         "security": [
           {
@@ -474,8 +477,8 @@
         "tags": [
           "auth"
         ],
-        "summary": "Change Password",
-        "description": "Change the authenticated user's password after verifying the current one.",
+        "summary": "Change the password",
+        "description": "Set a new password, re-authenticating with the current one.",
         "operationId": "change_password_auth_change_password_post",
         "requestBody": {
           "content": {
@@ -514,8 +517,8 @@
         "tags": [
           "auth"
         ],
-        "summary": "Google Auth",
-        "description": "Verify a Google ID token and return a JWT pair.\n\nFinds an existing account by google_id, falls back to matching by email\n(linking a pre-existing password account), or creates a new account.",
+        "summary": "Sign in with Google",
+        "description": "Exchange a Google ID token for access and refresh tokens, creating an account if needed.",
         "operationId": "google_auth_auth_google_post",
         "requestBody": {
           "content": {
@@ -556,7 +559,7 @@
         "tags": [
           "users"
         ],
-        "summary": "Get Me",
+        "summary": "Get the current account",
         "operationId": "get_me_users_me_get",
         "responses": {
           "200": {
@@ -574,14 +577,15 @@
           {
             "HTTPBearer": []
           }
-        ]
+        ],
+        "description": "Return the authenticated account's profile and preferences."
       },
       "delete": {
         "tags": [
           "users"
         ],
-        "summary": "Delete Me",
-        "description": "Permanently erase the caller's account and all associated data (GDPR/CCPA).\n\nUnlike the soft-delete used for individual scans, this is an immediate, irreversible\nhard delete: the user row is removed and the ``ondelete=\"CASCADE\"`` foreign keys on\nscans (and, transitively, their results and screenshots), API keys, and auth tokens\ncascade-remove every associated row \u2014 which also neutralizes any live session or key.\nThe screenshots' object-storage blobs are cleaned up asynchronously afterwards.\n\nAn account that performed admin actions is refused (409): those actions are recorded\nin the append-only audit log under a ``RESTRICT`` foreign key that must not be\norphaned. Such an account has to be handled by another administrator.\n\nAn account with a live subscription is also refused (409). Erasure removes our\nrecord of the subscription but not Paddle's, which would keep billing a customer\nfor a plan whose account no longer exists \u2014 so Privacy Policy \u00a77 tells them to\ncancel first, and this enforces what it says.",
+        "summary": "Delete the account",
+        "description": "Permanently erase the account and everything belonging to it: scans, reports,\nscreenshots, and API keys. This cannot be undone.\n\nCancel any active subscription first; this answers `409` while one is live.",
         "operationId": "delete_me_users_me_delete",
         "responses": {
           "204": {
@@ -598,8 +602,8 @@
         "tags": [
           "users"
         ],
-        "summary": "Update Me",
-        "description": "Update the caller's profile.\n\nEmail is not settable here. Changing an address has to prove the new one is\nreachable first, which is a two-step flow this single-shot PATCH cannot\nexpress, so it lives at ``POST /auth/change-email``. The field is still\naccepted and rejected explicitly rather than dropped from the schema, so a\nclient that was setting it gets told where the flow moved instead of watching\nthe write silently do nothing.",
+        "summary": "Update preferences",
+        "description": "Update the account's preferences. Email addresses cannot be changed here \u2014 use\n`POST /auth/change-email`, which confirms the new address first.",
         "operationId": "update_me_users_me_patch",
         "requestBody": {
           "content": {
@@ -645,8 +649,8 @@
         "tags": [
           "users"
         ],
-        "summary": "Get My Usage",
-        "description": "Return the caller's plan entitlements and their usage against them.\n\nKept off ``GET /users/me`` deliberately: that endpoint is polled by the SPA\non every page and is a single row read, whereas this one runs a COUNT over\nthe caller's scans for the current calendar month.",
+        "summary": "Get plan usage and limits",
+        "description": "Return the plan's limits and consumption so far: scans used and remaining this\ncalendar month, when the quota resets, which categories are available, and any\none-off scan credits.\n\nQuota runs on the calendar month in UTC and does not roll over.",
         "operationId": "get_my_usage_users_me_usage_get",
         "responses": {
           "200": {
@@ -672,8 +676,8 @@
         "tags": [
           "users"
         ],
-        "summary": "Get My Webhook Secret",
-        "description": "Return the caller's webhook signing secret, deriving it on demand.\n\nReadable repeatedly, unlike an API key. The secret is not a bearer credential\n\u2014 it verifies that a delivery came from us and grants access to nothing \u2014 so\nthe cost of re-showing it is low, while forcing a rotation to recover a lost\nvalue would break a working integration for no security gain.\n\nGated on the `webhooks` entitlement rather than `public_api`: an account that\ncannot register a webhook has nothing to verify, and handing out a secret for\na feature the plan does not include only invites a support question.",
+        "summary": "Get the webhook signing secret",
+        "description": "Return the secret used to verify scan webhook deliveries. Unlike an API key it\ncan be read as often as needed \u2014 it verifies that a delivery came from us and\ngrants no access on its own.\n\nRequires an interactive session and a plan that includes webhooks.",
         "operationId": "get_my_webhook_secret_users_me_webhook_secret_get",
         "responses": {
           "200": {
@@ -699,8 +703,8 @@
         "tags": [
           "users"
         ],
-        "summary": "Rotate My Webhook Secret",
-        "description": "Issue a new signing secret for the caller, invalidating the previous one.\n\nBumping `webhook_secret_version` re-derives the secret for this account alone.\nThere is deliberately **no overlap window**: the old secret stops being valid\nthe moment this returns, so a receiver must be updated first. A grace period\nwould mean signing each delivery twice or accepting either secret, which is\nexactly the ambiguity a customer rotates to *remove* after a leak.",
+        "summary": "Rotate the webhook signing secret",
+        "description": "Issue a new webhook signing secret. **The previous secret stops working\nimmediately \u2014 there is no overlap window**, so update your receiver first.\n\nRequires an interactive session and a plan that includes webhooks.",
         "operationId": "rotate_my_webhook_secret_users_me_webhook_secret_rotate_post",
         "responses": {
           "200": {
@@ -726,8 +730,8 @@
         "tags": [
           "scans"
         ],
-        "summary": "List Categories",
-        "description": "Return the analysis categories, each flagged with the caller's access.\n\nEvery category is always listed \u2014 the SPA's picker renders the withheld ones\nas locked rather than hiding them, so a free user can see what upgrading\nbuys. Authentication is required (Phase 11 B3): the response is now\nper-account, and scanning already requires a registered, verified account,\nso there is nothing an anonymous caller could do with it.",
+        "summary": "List scan categories",
+        "description": "Return every analysis category with its description and its weight in the\noverall score, plus an `included` flag saying whether your plan may run it.\n\nRequesting a category your plan withholds is refused rather than silently\nskipped, so check this before passing `categories` to a scan.",
         "operationId": "list_categories_api_v1_scans_categories_get",
         "responses": {
           "200": {
@@ -753,8 +757,8 @@
         "tags": [
           "scans"
         ],
-        "summary": "List Scans",
-        "description": "Return a paginated list of the authenticated user's scans, newest first.\n\nOptionally narrowed by a free-text search (`q`, matched against URL and label)\nand/or an exact `status` filter.",
+        "summary": "List scans",
+        "description": "Return your scans, newest first, with pagination. Filter by `q` (matches the URL\nor label) and by `status`. Deleted scans are excluded.",
         "operationId": "list_scans_api_v1_scans_get",
         "security": [
           {
@@ -853,8 +857,8 @@
         "tags": [
           "scans"
         ],
-        "summary": "Create Scan",
-        "description": "Submit a URL for analysis.\n\nValidates the requested categories, enforces every plan entitlement that\napplies at submission time (category access, monthly scan quota, webhook\naccess, concurrency, and the daily burst cap), persists a scan record, and\nenqueues the Celery job. Returns immediately with the scan ID and status\n\"queued\".\n\nThe checks run cheapest-and-most-explanatory first: a caller who is both\nunverified and out of quota should hear about verification, and a caller\nasking for a category their plan lacks should be told that rather than being\nsilently charged a scan against their quota.",
+        "summary": "Submit a scan",
+        "description": "Queue a website scan and return immediately with its id and a `queued` status.\n\nA scan opens a real browser, runs a Lighthouse audit, and has screenshots\nreviewed by a vision model, so it takes a few minutes rather than seconds. Poll\n`GET /api/v1/scans/{scan_id}`, subscribe to `GET /api/v1/scans/{scan_id}/stream`,\nor supply a `webhook_url` to be notified on completion.\n\n**Each scan draws on your monthly quota.** Omit `categories` to run everything\nyour plan includes; request specific ones with `GET /api/v1/scans/categories`.\n\nRefusals are distinguishable and worth handling separately:\n\n- `403` \u2014 your plan does not include a requested category, webhooks, or the\n  scan credit you asked to spend. Retrying will not help.\n- `422` \u2014 the URL or a category id is not valid.\n- `429` \u2014 monthly quota, concurrent scan limit, or daily burst cap. A\n  `Retry-After` header says when to try again.\n\nA scan whose URL turns out to be unreachable is voided before any analysis runs:\nit is marked with `quota_refunded_at`, costs no quota, and returns any spent\ncredit.",
         "operationId": "create_scan_api_v1_scans_post",
         "security": [
           {
@@ -936,8 +940,8 @@
         "tags": [
           "scans"
         ],
-        "summary": "Get Trends",
-        "description": "Return per-URL overall-score history for the caller's completed scans.\n\nPowers the dashboard trend chart and the scan-history sparklines. Points are\nordered oldest-first and capped at the most recent ``_MAX_TREND_POINTS_PER_URL``\nper URL.",
+        "summary": "Get score trends",
+        "description": "Return score history grouped by URL for sites you have scanned more than once \u2014\nthe data behind \"is this site improving?\". Each URL returns its most recent\npoints in chronological order.",
         "operationId": "get_trends_api_v1_scans_trends_get",
         "responses": {
           "200": {
@@ -963,8 +967,8 @@
         "tags": [
           "scans"
         ],
-        "summary": "Recent Duplicate",
-        "description": "Report whether the caller scanned this website within the warning window.\n\nAdvisory pre-submit check: lets the web UI caution the user against re-scanning\na site they scanned recently (which can trip the site's WAF). Scoped to the\ncaller's own scans; never blocks submission.",
+        "summary": "Check for a recent scan of a URL",
+        "description": "Report whether this URL was scanned very recently, so you can offer the existing\nreport instead of spending quota on a near-identical one.\n\nAdvisory only \u2014 it never blocks a scan.",
         "operationId": "recent_duplicate_api_v1_scans_recent_duplicate_get",
         "security": [
           {
@@ -1013,8 +1017,8 @@
         "tags": [
           "scans"
         ],
-        "summary": "Get Scan",
-        "description": "Return the current status and results for a scan owned by the caller.",
+        "summary": "Get a scan",
+        "description": "Return one scan with its per-category results and screenshot URLs.\n\nPoll this to follow progress: `status` moves `queued` \u2192 `scanning` \u2192\n`summarizing` \u2192 `complete`, or to `failed`. Screenshot URLs are pre-signed and\nshort-lived \u2014 fetch them promptly rather than storing them.\n\nAnswers `404` for a scan that does not exist **and** for one belonging to another\naccount, so scan ids cannot be enumerated.",
         "operationId": "get_scan_api_v1_scans__scan_id__get",
         "security": [
           {
@@ -1059,8 +1063,8 @@
         "tags": [
           "scans"
         ],
-        "summary": "Update Scan",
-        "description": "Update the editable fields of a scan owned by the caller (currently the label).\n\nOnly fields explicitly present in the request body are applied, so an empty\nPATCH is a no-op rather than clearing the label. Sending ``{\"label\": null}``\nstill clears it (the key is present). This keeps PATCH semantics correct and\navoids the partial-update clobber if more editable fields are added later.",
+        "summary": "Rename a scan",
+        "description": "Update a scan's label. Send `{\"label\": null}` to clear it. Omitted fields are\nleft unchanged.",
         "operationId": "update_scan_api_v1_scans__scan_id__patch",
         "security": [
           {
@@ -1115,8 +1119,8 @@
         "tags": [
           "scans"
         ],
-        "summary": "Delete Scan",
-        "description": "Soft-delete a scan owned by the caller.\n\nSets ``deleted_at`` so the scan is hidden from every listing and lookup\n(all read queries filter ``deleted_at IS NULL``) while its results and\nscreenshots are preserved during a grace window. The Phase 11 retention purge\n(worker/tasks/retention.py) permanently removes the row and its object-storage\nscreenshots ``retention_soft_delete_purge_days`` after this soft delete.",
+        "summary": "Delete a scan",
+        "description": "Delete a scan. It disappears from every listing immediately and its stored\nresults and screenshots are removed permanently after a short grace period.\n\n**Deleting does not restore quota.** A scan that ran has already been paid for.",
         "operationId": "delete_scan_api_v1_scans__scan_id__delete",
         "security": [
           {
@@ -1156,8 +1160,8 @@
         "tags": [
           "scans"
         ],
-        "summary": "Get Scan Report",
-        "description": "Return the full structured report for a completed scan.\n\nParses raw analyzer results into structured findings and generates\npre-signed URLs for all screenshots. The report's free text (findings,\nsummaries) is translated into the requested language; English content is\ncanonical and is returned unchanged when ``lang`` is English.",
+        "summary": "Get a scan report",
+        "description": "Return the full report: an executive summary with recommended actions, a scored\nbreakdown, and per-category findings with a recommendation for each.\n\nAvailable once the scan is finished; answers `409` while it is still running.\n\nReport text is stored in English and translated on demand \u2014 pass `?lang=de` or\nsend an `Accept-Language` header. A translation failure falls back to English\nrather than erroring.\n\nEach category carries its own status. `pass`, `warn` and `fail` reflect its\nscore; `error` means the analysis failed; `blocked` means the site's bot\nprotection refused automated access. Both `error` and `blocked` carry a null\nscore and are excluded from the overall score rather than counted as failures.",
         "operationId": "get_scan_report_api_v1_scans__scan_id__report_get",
         "security": [
           {
@@ -1238,8 +1242,8 @@
         "tags": [
           "scans"
         ],
-        "summary": "Download Scan Report Pdf",
-        "description": "Generate and return a PDF version of the scan report.\n\nBoth the report's free text (findings, summaries) and its static chrome\n(headings, labels) are localized to the requested language.\n\nPDF export is a paid entitlement (Phase 11 B3) \u2014 the client-ready PDF is\nprecisely the freelance deliverable, so the free plan gets the on-screen\nreport only.",
+        "summary": "Download a report as PDF",
+        "description": "Return the report as a formatted PDF suitable for sending to a client.\n\nRequires a plan that includes PDF export, and a finished scan. Supports the same\n`?lang=` and `Accept-Language` localization as the JSON report.",
         "operationId": "download_scan_report_pdf_api_v1_scans__scan_id__report_pdf_get",
         "security": [
           {
@@ -1318,8 +1322,8 @@
         "tags": [
           "scans"
         ],
-        "summary": "Stream Scan Status",
-        "description": "Stream real-time scan status updates using Server-Sent Events.\n\nYields a `status` event each time the scan's status changes, and a final\n`done` event when the scan reaches a terminal state (complete or failed).\nTimes out after 5 minutes with a `timeout` event if the scan hasn't finished.",
+        "summary": "Stream scan progress",
+        "description": "A Server-Sent Events stream emitting a `status` event on each transition and a\nfinal `done` event when the scan finishes.\n\nThe connection closes with a `timeout` event after five minutes, so treat this as\na fast path and keep polling as the fallback for long scans.",
         "operationId": "stream_scan_status_api_v1_scans__scan_id__stream_get",
         "security": [
           {
@@ -1365,7 +1369,7 @@
           "api-keys"
         ],
         "summary": "List API keys",
-        "description": "Return all of the caller's API keys (active and revoked), newest first.",
+        "description": "List your API keys with their scopes and usage counts. Secrets are never\nreturned. Requires an interactive session.",
         "operationId": "list_api_keys_api_v1_keys_get",
         "responses": {
           "200": {
@@ -1390,7 +1394,7 @@
           "api-keys"
         ],
         "summary": "Create an API key",
-        "description": "Generate a new API key for the caller.\n\nThe raw secret is included in this response only and is never retrievable\nagain \u2014 store it securely on receipt.\n\nEvery tier may mint a key (opened up on 2026-09-09). The `public_api` check\nbelow therefore refuses nothing today, and is kept as the mechanism for any\nfuture tier that withholds programmatic access. A key grants no allowance of\nits own: it reaches the same monthly quota and the same category set the\naccount already has. Webhooks are the separate `webhooks` entitlement and\nremain Agency-only \u2014 that check lives on scan creation.\n\nExisting keys on a downgraded account stop authenticating via the matching\ncheck in :mod:`api.dependencies`, the one place the owning user is loaded on\nevery keyed request.",
+        "description": "Create an API key for programmatic access. **The secret is returned once, in this\nresponse, and is never retrievable again.**\n\nRequires an interactive session \u2014 an API key cannot create further keys.\n\nChoose the narrowest `scopes` that work: `scans:read` alone cannot create or\ndelete scans, which makes it the safer credential for anything unattended.",
         "operationId": "create_api_key_api_v1_keys_post",
         "requestBody": {
           "content": {
@@ -1437,7 +1441,7 @@
           "api-keys"
         ],
         "summary": "Revoke an API key",
-        "description": "Revoke an API key. Revocation is permanent; the key stops working at once.",
+        "description": "Revoke an API key. It stops working immediately and permanently; there is no way\nto restore it. Requires an interactive session.",
         "operationId": "revoke_api_key_api_v1_keys__key_id__delete",
         "security": [
           {
@@ -1477,8 +1481,8 @@
         "tags": [
           "billing"
         ],
-        "summary": "Public plan matrix",
-        "description": "Return every plan, including Free, for the public pricing page.\n\nTwo things about this route are deliberate and easy to mistake for oversights.\n\n**It takes no authentication.** Every other route in this router declares\n`Depends(get_current_user_id)` individually \u2014 there is no router-level\ndependency \u2014 so the omission here is a single missing line and is stated\nexplicitly for that reason. It is the pricing page's data source, and that\npage is read by people who have no account yet; nothing returned is\naccount-specific.\n\n**It is not behind `_require_billing_enabled()`.** With no Paddle catalog\nconfigured the page must still publish the plan matrix in USD; it simply\ncannot offer a localized price. So this mirrors `GET /api/v1/config`, which\nwithholds the client token rather than failing: `billing_enabled` is reported\nhonestly and the price ids come back null.\n\n`PLANS` stays the single source, so the published page cannot drift from\n`docs/product/COST_AND_PRICING.md` \u00a72.3 without failing a test.",
+        "summary": "List available plans",
+        "description": "Return every plan with its price, monthly scan allowance, included categories,\nretention window, and concurrency limit. No authentication required.\n\nThis is the authoritative source for plan limits; do not hard-code them.",
         "operationId": "get_public_plans_api_v1_billing_plans_get",
         "responses": {
           "200": {
@@ -1499,8 +1503,8 @@
         "tags": [
           "billing"
         ],
-        "summary": "Billing state",
-        "description": "Return the caller's plan, subscription state, and audit-credit balance.\n\nDeliberately separate from ``GET /users/me/usage``: that endpoint is the\nquota surface and already runs a COUNT, and this one is read only on the\nbilling page.",
+        "summary": "Get subscription state",
+        "description": "Return the account's current subscription, plan, and renewal state.",
         "operationId": "get_subscription_api_v1_billing_subscription_get",
         "responses": {
           "200": {
@@ -1527,7 +1531,7 @@
           "billing"
         ],
         "summary": "Start a checkout",
-        "description": "Create a Paddle transaction for the browser's checkout overlay.\n\nServer-side on purpose. Creating the transaction here is what makes the\naccount id in `custom_data` trustworthy: the browser only ever receives an\nopaque transaction id, so it cannot nominate whose account a payment credits.\n\nA **verified email is a hard prerequisite** \u2014 B2 made the free tier the trial\nand made verification the gate in its place, and an unverified buyer is a\nchargeback and a support ticket waiting to happen.",
+        "description": "Begin a checkout for a plan or a one-off scan, returning a transaction to complete in the browser.",
         "operationId": "create_checkout_api_v1_billing_checkout_post",
         "security": [
           {
@@ -1591,8 +1595,8 @@
         "tags": [
           "billing"
         ],
-        "summary": "Customer portal links",
-        "description": "Mint short-lived authenticated links into Paddle's customer portal.\n\nThis is where invoice history and payment-method updates live. Building those\nourselves would mean handling payment data we have published that we never\nreceive, so they stay Paddle's.",
+        "summary": "Get customer portal links",
+        "description": "Return links to the payment provider's portal for managing payment methods and invoices.",
         "operationId": "get_portal_api_v1_billing_portal_get",
         "responses": {
           "200": {
@@ -1619,7 +1623,7 @@
           "billing"
         ],
         "summary": "Change plan",
-        "description": "Move the caller's subscription to a different plan or billing period.\n\nBoth directions take effect immediately and are prorated, which is what ToS \u00a79\npublishes. Upgrades bill the difference now; downgrades credit the unused\nremainder against the next invoice. The symmetry is not a simplification \u2014 it\nis forced, because Paddle applies every item change at once and can only defer\nthe *billing* (see `change_subscription_price`).\n\nPaddle then reports the resulting state back through `subscription.updated`,\nwhich is what actually moves the tier. This response is therefore usually one\nstep behind; the SPA polls.",
+        "description": "Move the subscription to a different plan or billing period.",
         "operationId": "change_subscription_api_v1_billing_subscription_change_post",
         "requestBody": {
           "content": {
@@ -1665,8 +1669,8 @@
         "tags": [
           "billing"
         ],
-        "summary": "Cancel plan",
-        "description": "Cancel at the end of the current billing period, per ToS \u00a79.\n\nNot immediate, and not prorated \u2014 the customer has paid for this period and\nkeeps it. Paddle sends `subscription.canceled` when it actually takes effect,\nwhich is what drops the tier; nothing here needs a scheduler.",
+        "summary": "Cancel the subscription",
+        "description": "Cancel the subscription at the end of the current billing period. Access\ncontinues until then, and scan history is kept for a grace period afterwards\nrather than being deleted immediately.",
         "operationId": "cancel_subscription_api_v1_billing_subscription_cancel_post",
         "responses": {
           "200": {
@@ -1692,8 +1696,8 @@
         "tags": [
           "billing"
         ],
-        "summary": "Withdraw from contract",
-        "description": "Exercise the EU/UK 14-day right of withdrawal.\n\nDirective (EU) 2023/2673 Art. 11a requires a prominent control available\nthroughout the withdrawal period; ToS \u00a79 has published that it lives on the\naccount billing page. Unlike cancellation this unwinds the contract rather\nthan letting it run out: the subscription ends immediately *and* everything\npaid inside the window is refunded.\n\nThe two halves are independent on purpose. Cancelling stops future billing;\nrefunding returns money already taken, and it is the half the Directive\nactually compels \u2014 so a failure to cancel must not skip it.\n\n**A Paddle failure must not cost the customer the right.** Whatever fails is\nlogged at ERROR for manual completion and the caller is told the withdrawal\nwas received, rather than being handed a 500 and left to wonder.",
+        "summary": "Withdraw from a recent purchase",
+        "description": "Exercise a statutory right of withdrawal on a recent purchase, where one applies.",
         "operationId": "withdraw_from_contract_api_v1_billing_withdraw_post",
         "responses": {
           "200": {
