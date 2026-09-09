@@ -26,7 +26,7 @@ real report before deciding whether to pay for more.
 
 ```bash
 claude mcp add sytecheck --env SYTECHECK_API_KEY=wak_your_key_here \
-  -- npx -y @sytecheck/mcp-server
+  -- npx -y @ascentws/sytecheck-mcp
 ```
 
 ### Claude Desktop
@@ -38,7 +38,7 @@ Edit `claude_desktop_config.json` (Settings → Developer → Edit Config):
   "mcpServers": {
     "sytecheck": {
       "command": "npx",
-      "args": ["-y", "@sytecheck/mcp-server"],
+      "args": ["-y", "@ascentws/sytecheck-mcp"],
       "env": { "SYTECHECK_API_KEY": "wak_your_key_here" }
     }
   }
@@ -54,7 +54,7 @@ Add to `.cursor/mcp.json` in your project, or the global equivalent:
   "mcpServers": {
     "sytecheck": {
       "command": "npx",
-      "args": ["-y", "@sytecheck/mcp-server"],
+      "args": ["-y", "@ascentws/sytecheck-mcp"],
       "env": { "SYTECHECK_API_KEY": "wak_your_key_here" }
     }
   }
@@ -70,7 +70,7 @@ Add to `~/.gemini/settings.json` (or the Antigravity equivalent):
   "mcpServers": {
     "sytecheck": {
       "command": "npx",
-      "args": ["-y", "@sytecheck/mcp-server"],
+      "args": ["-y", "@ascentws/sytecheck-mcp"],
       "env": { "SYTECHECK_API_KEY": "wak_your_key_here" }
     }
   }
@@ -86,7 +86,7 @@ from agents.mcp import MCPServerStdio
 sytecheck = MCPServerStdio(
     params={
         "command": "npx",
-        "args": ["-y", "@sytecheck/mcp-server"],
+        "args": ["-y", "@ascentws/sytecheck-mcp"],
         "env": {"SYTECHECK_API_KEY": "wak_your_key_here"},
     }
 )
