@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm test
+      - run: npm run build
+
+      # The server is spawned as a subprocess and speaks JSON-RPC over stdio, so
+      # a build that compiles but cannot complete a handshake is still broken.
+      # This drives a real initialize + tools/list through the built entry point.
+      - name: Smoke test the stdio handshake
+        env:
+          SYTECHECK_API_KEY: wak_ci_placeholder_key_not_real
+        run: |
+          printf '%s\n%s\n' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"ci","version":"1"}}}' \
+            '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
+            | node dist/index.js > /tmp/mcp-out.jsonl
+          node -e '
+            const lines = require("fs").readFileSync("/tmp/mcp-out.jsonl", "utf8")
+              .trim().split("\n").map((l) => JSON.parse(l));
+            const tools = lines.find((m) => m.id === 2).result.tools.map((t) => t.name).sort();
+            const expected = ["get_account_usage","get_scan_report","get_scan_trends",
+                              "list_categories","list_scans","run_scan"];
+            if (JSON.stringify(tools) !== JSON.stringify(expected)) {
+              console.error("tool list changed:", tools);
+              process.exit(1);
+            }
+            console.log("handshake ok:", tools.join(", "));
+          '
+
+  examples:
+    # Compiled examples rot silently in a repo that is otherwise all TypeScript —
+    # nothing else here would ever fail if they stopped building.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Compile the Java example
+        run: javac -d /tmp/java-out examples/Scan.java
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0"
+      - name: Build the C# example
+        run: |
+          mkdir -p /tmp/csharp && cd /tmp/csharp
+          dotnet new console --force -o . >/dev/null
+          # The example is written for dotnet-script's top-level form; `Args` is
+          # that host's argument list, and `args` is the console template's.
+          sed -e 's/^#!.*//' -e 's/\bArgs\b/args/g' \
+            "$GITHUB_WORKSPACE/examples/Scan.csx" > Program.cs
+          dotnet build --nologo -v quiet
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Syntax-check the Python examples
+        run: python -m py_compile examples/scan.py examples/webhook_receiver.py
+
+      - name: Shellcheck the curl example
+        run: shellcheck examples/scan.sh

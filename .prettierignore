@@ -1,0 +1,5 @@
+dist/
+public-openapi.json
+docs/API.md
+examples/Scan.java
+examples/Scan.csx
