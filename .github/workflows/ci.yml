@@ -31,7 +31,7 @@ jobs:
       # This drives a real initialize + tools/list through the built entry point.
       - name: Smoke test the stdio handshake
         env:
-          SYTECHECK_API_KEY: wak_ci_placeholder_key_not_real
+          SYTECHECK_API_KEY: sck_ci_placeholder_key_not_real
         run: |
           printf '%s\n%s\n' \
             '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"ci","version":"1"}}}' \

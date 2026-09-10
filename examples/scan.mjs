@@ -2,7 +2,7 @@
 /**
  * Submit a scan, poll until it finishes, print the report.
  *
- *   export SYTECHECK_API_KEY=wak_...
+ *   export SYTECHECK_API_KEY=sck_...
  *   node scan.mjs https://example.com
  *
  * No dependencies — `fetch` is built into Node 18+.

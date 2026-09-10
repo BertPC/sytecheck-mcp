@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Submit a scan, poll until it finishes, print the report.
 #
-#   export SYTECHECK_API_KEY=wak_...
+#   export SYTECHECK_API_KEY=sck_...
 #   ./scan.sh https://example.com
 #
 # Needs curl and jq.

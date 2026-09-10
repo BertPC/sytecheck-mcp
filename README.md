@@ -25,7 +25,7 @@ real report before deciding whether to pay for more.
 ### Claude Code
 
 ```bash
-claude mcp add sytecheck --env SYTECHECK_API_KEY=wak_your_key_here \
+claude mcp add sytecheck --env SYTECHECK_API_KEY=sck_your_key_here \
   -- npx -y @ascentws/sytecheck-mcp
 ```
 
@@ -39,7 +39,7 @@ Edit `claude_desktop_config.json` (Settings → Developer → Edit Config):
     "sytecheck": {
       "command": "npx",
       "args": ["-y", "@ascentws/sytecheck-mcp"],
-      "env": { "SYTECHECK_API_KEY": "wak_your_key_here" }
+      "env": { "SYTECHECK_API_KEY": "sck_your_key_here" }
     }
   }
 }
@@ -55,7 +55,7 @@ Add to `.cursor/mcp.json` in your project, or the global equivalent:
     "sytecheck": {
       "command": "npx",
       "args": ["-y", "@ascentws/sytecheck-mcp"],
-      "env": { "SYTECHECK_API_KEY": "wak_your_key_here" }
+      "env": { "SYTECHECK_API_KEY": "sck_your_key_here" }
     }
   }
 }
@@ -71,7 +71,7 @@ Add to `~/.gemini/settings.json` (or the Antigravity equivalent):
     "sytecheck": {
       "command": "npx",
       "args": ["-y", "@ascentws/sytecheck-mcp"],
-      "env": { "SYTECHECK_API_KEY": "wak_your_key_here" }
+      "env": { "SYTECHECK_API_KEY": "sck_your_key_here" }
     }
   }
 }
@@ -87,7 +87,7 @@ sytecheck = MCPServerStdio(
     params={
         "command": "npx",
         "args": ["-y", "@ascentws/sytecheck-mcp"],
-        "env": {"SYTECHECK_API_KEY": "wak_your_key_here"},
+        "env": {"SYTECHECK_API_KEY": "sck_your_key_here"},
     }
 )
 
@@ -130,7 +130,7 @@ cannot create scans at all.
 
 | Variable                     | Default                     | Purpose                                              |
 | ---------------------------- | --------------------------- | ---------------------------------------------------- |
-| `SYTECHECK_API_KEY`          | _(required)_                | Your `wak_` API key                                  |
+| `SYTECHECK_API_KEY`          | _(required)_                | Your `sck_` API key                                  |
 | `SYTECHECK_API_URL`          | `https://api.sytecheck.app` | API base URL                                         |
 | `SYTECHECK_WAIT_TIMEOUT_MS`  | `60000`                     | How long `run_scan` waits before returning a scan id |
 | `SYTECHECK_POLL_INTERVAL_MS` | `3000`                      | Gap between status checks while waiting              |
@@ -164,7 +164,7 @@ npm run lint
 To run against a local SyteCheck instance:
 
 ```bash
-SYTECHECK_API_KEY=wak_… SYTECHECK_API_URL=http://localhost:8000 node dist/index.js
+SYTECHECK_API_KEY=sck_… SYTECHECK_API_URL=http://localhost:8000 node dist/index.js
 ```
 
 The server speaks JSON-RPC over stdin and stdout, so **nothing may be written to

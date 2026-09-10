@@ -3,7 +3,7 @@ import { ApiError, SyteCheckClient } from "./client.js";
 import type { Config } from "./config.js";
 
 const config: Config = {
-  apiKey: "wak_super_secret_value",
+  apiKey: "sck_super_secret_value",
   apiUrl: "https://api.example.test",
   waitTimeoutMs: 1000,
   pollIntervalMs: 10,

@@ -2,7 +2,7 @@
 /*
  * Submit a scan, poll until it finishes, print a summary.
  *
- *   export SYTECHECK_API_KEY=wak_...
+ *   export SYTECHECK_API_KEY=sck_...
  *   dotnet script Scan.csx -- https://example.com
  *
  * Or drop the body into a console project's Program.cs and run it with

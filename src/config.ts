@@ -50,12 +50,12 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
         "under Account → API keys, then set it in your MCP client config.",
     );
   }
-  if (!apiKey.startsWith("wak_")) {
+  if (!apiKey.startsWith("sck_")) {
     // Caught early because the alternative is a puzzling 401 on the first tool
     // call. The usual cause is pasting the key id, or a session token, instead.
     throw new ConfigError(
       "SYTECHECK_API_KEY does not look like a SyteCheck API key — they begin " +
-        "with 'wak_'. Copy the full secret shown once at creation.",
+        "with 'sck_'. Copy the full secret shown once at creation.",
     );
   }
 

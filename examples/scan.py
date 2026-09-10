@@ -2,7 +2,7 @@
 """Submit a scan, poll until it finishes, print the report.
 
     pip install httpx
-    export SYTECHECK_API_KEY=wak_...
+    export SYTECHECK_API_KEY=sck_...
     python scan.py https://example.com
 
 Uses httpx because it is what most Python services already have; the standard

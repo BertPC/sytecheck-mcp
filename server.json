@@ -28,7 +28,7 @@
       "environmentVariables": [
         {
           "name": "SYTECHECK_API_KEY",
-          "description": "SyteCheck API key, created at Account -> API keys on sytecheck.app. Begins with wak_.",
+          "description": "SyteCheck API key, created at Account -> API keys on sytecheck.app. Begins with sck_.",
           "isRequired": true,
           "isSecret": true,
           "format": "string"

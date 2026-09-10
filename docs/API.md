@@ -31,7 +31,7 @@ a personal **API key**. Send the credential as a bearer token:
 Authorization: Bearer <token>
 ```
 
-API keys carry a recognisable `wak_` prefix so the server can tell them apart from
+API keys carry a recognisable `sck_` prefix so the server can tell them apart from
 JWTs.
 
 ### Generating an API key
@@ -53,7 +53,7 @@ curl -X POST https://api.sytecheck.app/api/v1/keys \
 {
   "id": 12,
   "label": "CI pipeline",
-  "key_prefix": "wak_a1b2c3",
+  "key_prefix": "sck_a1b2c3",
   "scopes": ["scans:read", "scans:write"],
   "is_active": true,
   "request_count": 0,
@@ -61,7 +61,7 @@ curl -X POST https://api.sytecheck.app/api/v1/keys \
   "created_at": "2026-06-14T12:00:00Z",
   "last_used_at": null,
   "revoked_at": null,
-  "api_key": "wak_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  "api_key": "sck_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 }
 ```
 
@@ -114,7 +114,7 @@ Requires a session JWT, not a key.
 
 ```bash
 curl -X POST https://api.sytecheck.app/api/v1/scans \
-  -H "Authorization: Bearer wak_..." \
+  -H "Authorization: Bearer sck_..." \
   -H "Content-Type: application/json" \
   -d '{
     "url": "https://example.com",
@@ -156,7 +156,7 @@ Poll `GET /api/v1/scans/{id}` until `status` is `complete` or `failed`:
 
 ```bash
 curl https://api.sytecheck.app/api/v1/scans/345 \
-  -H "Authorization: Bearer wak_..."
+  -H "Authorization: Bearer sck_..."
 ```
 
 Status transitions: `queued → scanning → summarizing → complete` (or `failed`).
@@ -169,7 +169,7 @@ where the analyzer produces them, the `score_breakdown`, and pre-signed screensh
 
 ```bash
 curl https://api.sytecheck.app/api/v1/scans/345/report \
-  -H "Authorization: Bearer wak_..."
+  -H "Authorization: Bearer sck_..."
 ```
 
 A PDF version is available at `GET /api/v1/scans/{id}/report/pdf`.
@@ -225,7 +225,7 @@ soon as the scan finishes — no polling required:
 
 ```bash
 curl -X POST https://api.sytecheck.app/api/v1/scans \
-  -H "Authorization: Bearer wak_..." \
+  -H "Authorization: Bearer sck_..." \
   -H "Content-Type: application/json" \
   -d '{
     "url": "https://example.com",

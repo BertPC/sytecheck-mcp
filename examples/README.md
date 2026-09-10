@@ -7,7 +7,7 @@ you work in and ignore the rest.
 All of them need an API key:
 
 ```bash
-export SYTECHECK_API_KEY=wak_your_key_here
+export SYTECHECK_API_KEY=sck_your_key_here
 ```
 
 Create one at [sytecheck.app](https://sytecheck.app) under **Account → API keys**.

@@ -1,7 +1,7 @@
 /*
  * Submit a scan, poll until it finishes, print a summary.
  *
- *   export SYTECHECK_API_KEY=wak_...
+ *   export SYTECHECK_API_KEY=sck_...
  *   java Scan.java https://example.com
  *
  * Single file, no build tool and no third-party dependencies — java.net.http is

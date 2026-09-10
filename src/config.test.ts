@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ConfigError, DEFAULT_API_URL, loadConfig } from "./config.js";
 
-const KEY = "wak_test_abcdefghijklmnop";
+const KEY = "sck_test_abcdefghijklmnop";
 
 describe("loadConfig", () => {
   it("defaults to the API host, not the app host", () => {
@@ -24,9 +24,9 @@ describe("loadConfig", () => {
     expect(() => loadConfig({})).toThrow(/Account → API keys/);
   });
 
-  it("rejects a value that is not a wak_ key", () => {
+  it("rejects a value that is not a sck_ key", () => {
     // Caught here because the alternative is a puzzling 401 on the first call.
-    expect(() => loadConfig({ SYTECHECK_API_KEY: "some-jwt-token" })).toThrow(/wak_/);
+    expect(() => loadConfig({ SYTECHECK_API_KEY: "some-jwt-token" })).toThrow(/sck_/);
   });
 
   it("rejects a non-positive timeout rather than hanging or spinning", () => {
