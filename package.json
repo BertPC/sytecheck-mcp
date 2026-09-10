@@ -1,6 +1,7 @@
 {
   "name": "@ascentws/sytecheck-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
+  "mcpName": "com.sytecheck/sytecheck-mcp",
   "description": "Model Context Protocol server for SyteCheck \u2014 run website audits and read their reports from Claude, ChatGPT, Cursor, and any other MCP client.",
   "license": "MIT",
   "author": "Ascent Web Solutions",

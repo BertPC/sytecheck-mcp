@@ -5,3 +5,9 @@ dist/
 .DS_Store
 __pycache__/
 *.pyc
+
+# The MCP Registry publishing keypair (docs/PUBLISHING.md). Whoever holds it can
+# publish under com.sytecheck/*, so it must never reach a public repo.
+key.pem
+*.pem
+

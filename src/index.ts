@@ -16,7 +16,9 @@ import { ConfigError, loadConfig } from "./config.js";
 import { registerPrompts } from "./prompts.js";
 import { registerTools } from "./tools.js";
 
-const VERSION = "0.1.0";
+// Kept in step with package.json by hand — importing it would put a JSON file
+// outside `rootDir` into the build. `manifest.test.ts` fails if they drift.
+const VERSION = "0.1.1";
 
 async function main(): Promise<void> {
   const config = loadConfig();

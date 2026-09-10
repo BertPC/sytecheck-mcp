@@ -1,0 +1,47 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "com.sytecheck/sytecheck-mcp",
+  "title": "SyteCheck",
+  "description": "Scan a website for SEO, accessibility, performance and security issues, and read the report.",
+  "version": "0.1.1",
+  "websiteUrl": "https://sytecheck.app/developers",
+  "repository": {
+    "url": "https://github.com/BertPC/sytecheck-mcp",
+    "source": "github"
+  },
+  "icons": [
+    {
+      "src": "https://sytecheck.app/assets/app-icon-512.png",
+      "mimeType": "image/png",
+      "sizes": ["512x512"]
+    }
+  ],
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@ascentws/sytecheck-mcp",
+      "version": "0.1.1",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "SYTECHECK_API_KEY",
+          "description": "SyteCheck API key, created at Account -> API keys on sytecheck.app. Begins with wak_.",
+          "isRequired": true,
+          "isSecret": true,
+          "format": "string"
+        },
+        {
+          "name": "SYTECHECK_API_URL",
+          "description": "API base URL. Only set this to point at a non-production SyteCheck instance.",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "string",
+          "default": "https://api.sytecheck.app"
+        }
+      ]
+    }
+  ]
+}
