@@ -24,8 +24,10 @@ server, substitute `http://localhost:8000`.
 
 ## 1. Authentication
 
-Every `/api/v1` route accepts **either** a session JWT (used by the web app) **or**
-a personal **API key**. Send the credential as a bearer token:
+Every `/api/v1` route accepts **either** a personal **API key** or a session JWT
+issued by signing in. For programmatic use the API key is the one you want; a few
+account-management routes accept only a session (see *What a key can reach*
+below). Send either as a bearer token:
 
 ```
 Authorization: Bearer <token>
