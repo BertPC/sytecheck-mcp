@@ -1,5 +1,7 @@
 # SyteCheck MCP Server
 
+[![SyteCheck MCP server](https://glama.ai/mcp/servers/@BertPC/sytecheck-mcp/badges/score.svg)](https://glama.ai/mcp/servers/@BertPC/sytecheck-mcp)
+
 Run website audits from Claude, ChatGPT, Cursor, or any other MCP client, and get
 the findings back as text you can act on.
 

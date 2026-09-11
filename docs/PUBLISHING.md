@@ -26,12 +26,13 @@ package identifier and the version — but the check only helps if it runs befor
 ## Checklist
 
 ```bash
-# 1. Bump both files together. They must state the same version.
-#    package.json:  "version"
-#    server.json:   "version" and packages[0].version
-$EDITOR package.json server.json
+# 1. Bump all three files together. They must state the same version.
+#    package.json:        "version"
+#    server.json:         "version" and packages[0].version
+#    mcpb/manifest.json:  "version"
+$EDITOR package.json server.json mcpb/manifest.json
 
-# 2. Verify. The manifest test fails if the two files disagree.
+# 2. Verify. The manifest tests fail if the three files disagree.
 npm ci
 npm run lint && npm run format:check && npm test && npm run build
 
@@ -40,6 +41,11 @@ npm publish --access public
 
 # 4. Publish the metadata.
 mcp-publisher publish
+
+# 5. Build the bundle and attach it to a GitHub release.
+npm run build:mcpb
+gh release create "v$(node -p 'require("./package.json").version')" \
+  build/sytecheck-mcp.mcpb --generate-notes
 ```
 
 Then confirm the registry took it:
@@ -47,6 +53,23 @@ Then confirm the registry took it:
 ```bash
 curl "https://registry.modelcontextprotocol.io/v0.1/servers?search=com.sytecheck/sytecheck-mcp"
 ```
+
+## The `.mcpb` bundle
+
+Step 5 packs `dist/`, the runtime dependencies, and `mcpb/manifest.json` into a
+single file Claude Desktop installs in one click — no JSON editing, and the user
+is prompted for the API key instead of pasting it into a config file. It is also
+the only route onto Smithery for a server with no hosted URL, though that is
+currently blocked; see [DIRECTORIES.md](DIRECTORIES.md).
+
+The bundle carries its own `node_modules`, so it does not depend on npx or a
+network round trip the way the README recipes do. That also means a stale bundle
+is a stale _copy of the code_, not just stale metadata — it cannot be fixed by
+republishing npm, which is why the release attaches a fresh one every time.
+
+`mcpb/manifest.json` repeats the tool list. `src/manifest.test.ts` asserts it
+matches what `src/tools.ts` registers, so renaming a tool without updating the
+manifest fails the build rather than shipping a bundle that misdescribes itself.
 
 ## Authenticating to the MCP Registry
 

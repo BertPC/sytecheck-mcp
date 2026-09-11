@@ -72,3 +72,32 @@ describe("server.json", () => {
     expect((manifest.description as string).length).toBeLessThanOrEqual(100);
   });
 });
+
+/**
+ * `mcpb/manifest.json` is the third copy of the same facts — the one Claude
+ * Desktop reads out of the installed bundle. It is the easiest of the three to
+ * forget, because nothing rejects a stale one: the bundle installs happily and
+ * simply misreports its version, or advertises a tool list that no longer
+ * matches what the server registers.
+ */
+describe("mcpb/manifest.json", () => {
+  const pkg = readJson("package.json");
+  const bundle = readJson("mcpb/manifest.json");
+
+  it("tracks the version being released", () => {
+    expect(bundle.version).toBe(pkg.version);
+  });
+
+  it("advertises exactly the tools the server registers", () => {
+    // Read as source text for the same reason index.ts is: importing tools.ts
+    // is harmless, but calling registerTools needs a live server and client.
+    const source = readFileSync(new URL("tools.ts", import.meta.url), "utf8");
+    const registered = [...source.matchAll(/registerTool\(\s*"([^"]+)"/g)].map(
+      (m) => m[1],
+    );
+    const advertised = (bundle.tools as { name: string }[]).map((tool) => tool.name);
+
+    expect(registered.length).toBeGreaterThan(0);
+    expect(advertised).toEqual(registered);
+  });
+});

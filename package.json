@@ -39,6 +39,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "build:mcpb": "npm run build && bash scripts/build-mcpb.sh",
     "dev": "tsc -p tsconfig.json --watch",
     "lint": "eslint .",
     "test": "vitest run",
@@ -52,6 +53,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@anthropic-ai/mcpb": "^2.1.2",
     "@eslint/js": "^10.0.1",
     "@types/node": "^22.10.0",
     "eslint": "^10.3.0",
