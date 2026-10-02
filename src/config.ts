@@ -9,8 +9,8 @@
 /** Default base URL for the SyteCheck API. */
 export const DEFAULT_API_URL = "https://api.sytecheck.app";
 
-export interface Config {
-  apiKey: string;
+/** Settings that do not depend on whose credential is in use. */
+export interface ServerConfig {
   apiUrl: string;
   /** How long `run_scan` waits for a scan to finish before handing back an id. */
   waitTimeoutMs: number;
@@ -18,14 +18,21 @@ export interface Config {
   pollIntervalMs: number;
 }
 
+export interface Config extends ServerConfig {
+  /**
+   * The bearer credential sent to the API. Over stdio, always a `sck_` key from
+   * the environment; over HTTP, whatever token the remote caller presented.
+   */
+  apiKey: string;
+}
+
 /** Thrown for a configuration problem the user has to fix themselves. */
 export class ConfigError extends Error {}
 
-function positiveIntFromEnv(
-  env: NodeJS.ProcessEnv,
-  name: string,
-  fallback: number,
-): number {
+/** `process.env` over stdio; the Worker passes its own vars. */
+type EnvVars = Record<string, string | undefined>;
+
+function positiveIntFromEnv(env: EnvVars, name: string, fallback: number): number {
   const raw = env[name];
   if (raw === undefined || raw === "") return fallback;
   const value = Number(raw);
@@ -36,13 +43,27 @@ function positiveIntFromEnv(
 }
 
 /**
- * Build the runtime config, or throw a message the user can act on.
+ * Build the credential-independent part of the config.
  *
  * The API URL is normalised by stripping a trailing slash, so that
  * `https://api.sytecheck.app/` and `https://api.sytecheck.app` behave the same
  * rather than producing `//api/v1/scans` on one of them.
  */
-export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
+export function loadServerConfig(env: EnvVars = process.env): ServerConfig {
+  // NOTE: api.sytecheck.app, *not* sytecheck.app. The app's host serves the
+  // single-page application, so an API path there returns its "page not found"
+  // screen rather than JSON — a confusing failure worth not defaulting into.
+  const apiUrl = (env.SYTECHECK_API_URL?.trim() || DEFAULT_API_URL).replace(/\/+$/, "");
+
+  return {
+    apiUrl,
+    waitTimeoutMs: positiveIntFromEnv(env, "SYTECHECK_WAIT_TIMEOUT_MS", 60_000),
+    pollIntervalMs: positiveIntFromEnv(env, "SYTECHECK_POLL_INTERVAL_MS", 3_000),
+  };
+}
+
+/** Build the stdio runtime config, or throw a message the user can act on. */
+export function loadConfig(env: EnvVars = process.env): Config {
   const apiKey = env.SYTECHECK_API_KEY?.trim();
   if (!apiKey) {
     throw new ConfigError(
@@ -59,15 +80,5 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     );
   }
 
-  // NOTE: api.sytecheck.app, *not* sytecheck.app. The app's host serves the
-  // single-page application, so an API path there returns its "page not found"
-  // screen rather than JSON — a confusing failure worth not defaulting into.
-  const apiUrl = (env.SYTECHECK_API_URL?.trim() || DEFAULT_API_URL).replace(/\/+$/, "");
-
-  return {
-    apiKey,
-    apiUrl,
-    waitTimeoutMs: positiveIntFromEnv(env, "SYTECHECK_WAIT_TIMEOUT_MS", 60_000),
-    pollIntervalMs: positiveIntFromEnv(env, "SYTECHECK_POLL_INTERVAL_MS", 3_000),
-  };
+  return { apiKey, ...loadServerConfig(env) };
 }

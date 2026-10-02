@@ -46,6 +46,9 @@ mcp-publisher publish
 npm run build:mcpb
 gh release create "v$(node -p 'require("./package.json").version')" \
   build/sytecheck-mcp.mcpb --generate-notes
+
+# 6. Redeploy the remote server so mcp.sytecheck.app matches (docs/REMOTE.md).
+npm run worker:deploy
 ```
 
 Then confirm the registry took it:

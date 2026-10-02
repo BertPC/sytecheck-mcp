@@ -1,0 +1,23 @@
+// The remote (Streamable HTTP) deployment of this server, at mcp.sytecheck.app.
+// See docs/REMOTE.md. No secrets live here: the only credential is the caller's
+// own bearer token, forwarded per request.
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "sytecheck-mcp",
+  "main": "index.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "routes": [{ "pattern": "mcp.sytecheck.app", "custom_domain": true }],
+  "vars": {
+    "SYTECHECK_API_URL": "https://api.sytecheck.app",
+    // Comma-separated browser origins allowed to call /mcp. Server-side clients
+    // (Claude, ChatGPT, MCP Inspector's proxy) send no Origin and are unaffected.
+    "ALLOWED_ORIGINS": "",
+  },
+  "observability": {
+    "enabled": true,
+    "logs": { "head_sampling_rate": 1 },
+    "traces": { "enabled": true, "head_sampling_rate": 0.01 },
+  },
+}

@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, it, expect } from "vitest";
+import { VERSION } from "./server.js";
 
 /**
  * `server.json` is the MCP Registry's copy of facts that also live in
@@ -57,13 +58,10 @@ describe("server.json", () => {
     expect(npmPackage?.version).toBe(pkg.version);
   });
 
-  it("agrees with the version the running server reports over stdio", () => {
-    // Read as text rather than imported: index.ts calls main() at module scope,
-    // so importing it would start a server inside the test run. This is the
-    // version a client shows in its server list, and nothing else would catch
-    // it lagging a release behind.
-    const source = readFileSync(new URL("index.ts", import.meta.url), "utf8");
-    expect(source).toContain(`const VERSION = "${pkg.version as string}"`);
+  it("agrees with the version the running server reports", () => {
+    // This is the version a client shows in its server list, and nothing else
+    // would catch it lagging a release behind.
+    expect(VERSION).toBe(pkg.version);
   });
 
   it("keeps the description inside the registry's limit", () => {
@@ -89,8 +87,8 @@ describe("mcpb/manifest.json", () => {
   });
 
   it("advertises exactly the tools the server registers", () => {
-    // Read as source text for the same reason index.ts is: importing tools.ts
-    // is harmless, but calling registerTools needs a live server and client.
+    // Read as source text: importing tools.ts is harmless, but calling
+    // registerTools needs a live server and client.
     const source = readFileSync(new URL("tools.ts", import.meta.url), "utf8");
     const registered = [...source.matchAll(/registerTool\(\s*"([^"]+)"/g)].map(
       (m) => m[1],

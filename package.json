@@ -40,6 +40,9 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "build:mcpb": "npm run build && bash scripts/build-mcpb.sh",
+    "worker:dev": "wrangler dev -c worker/wrangler.jsonc",
+    "worker:deploy": "wrangler deploy -c worker/wrangler.jsonc",
+    "worker:typecheck": "tsc -p worker/tsconfig.json",
     "dev": "tsc -p tsconfig.json --watch",
     "lint": "eslint .",
     "test": "vitest run",
@@ -54,13 +57,15 @@
   },
   "devDependencies": {
     "@anthropic-ai/mcpb": "^2.1.2",
+    "@cfworker/json-schema": "^4.1.1",
     "@eslint/js": "^10.0.1",
     "@types/node": "^22.10.0",
     "eslint": "^10.3.0",
     "globals": "^17.12.0",
+    "prettier": "^3.4.0",
     "typescript": "^5.7.0",
     "typescript-eslint": "^8.59.2",
     "vitest": "^5.0.0",
-    "prettier": "^3.4.0"
+    "wrangler": "^4.146.0"
   }
 }

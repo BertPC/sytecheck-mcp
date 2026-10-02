@@ -27,6 +27,9 @@ jobs:
       - run: npm run format:check
       - run: npm test
       - run: npm run build
+      # The remote Worker shares src/ but compiles against the Workers runtime
+      # types, which the npm build above never sees.
+      - run: npm run worker:typecheck
 
       # The server is spawned as a subprocess and speaks JSON-RPC over stdio, so
       # a build that compiles but cannot complete a handshake is still broken.

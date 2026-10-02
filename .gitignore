@@ -12,3 +12,6 @@ __pycache__/
 key.pem
 *.pem
 
+
+# Local state from `wrangler dev`.
+.wrangler/

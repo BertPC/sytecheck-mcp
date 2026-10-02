@@ -9,35 +9,13 @@
  * Diagnostics go to stderr, which clients surface as server logs.
  */
 
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { SyteCheckClient } from "./client.js";
 import { ConfigError, loadConfig } from "./config.js";
-import { registerPrompts } from "./prompts.js";
-import { registerTools } from "./tools.js";
-
-// Kept in step with package.json by hand — importing it would put a JSON file
-// outside `rootDir` into the build. `manifest.test.ts` fails if they drift.
-const VERSION = "0.1.1";
+import { createServer, VERSION } from "./server.js";
 
 async function main(): Promise<void> {
   const config = loadConfig();
-  const client = new SyteCheckClient(config);
-
-  const server = new McpServer(
-    { name: "sytecheck", version: VERSION },
-    {
-      instructions:
-        "SyteCheck scans a web page across ten quality dimensions and returns a " +
-        "scored, plain-language report. Scans cost the account real money and draw " +
-        "on a monthly quota, so prefer get_scan_report on an existing scan over " +
-        "run_scan on a URL that was scanned recently, and check get_account_usage " +
-        "before running several.",
-    },
-  );
-
-  registerTools(server, client, config);
-  registerPrompts(server);
+  const server = createServer(config);
 
   await server.connect(new StdioServerTransport());
   console.error(`sytecheck-mcp ${VERSION} ready (API: ${config.apiUrl})`);
