@@ -11,6 +11,11 @@
   "routes": [{ "pattern": "mcp.sytecheck.app", "custom_domain": true }],
   "vars": {
     "SYTECHECK_API_URL": "https://api.sytecheck.app",
+    // The resource OAuth tokens are issued for. Must equal the API's
+    // OAUTH_RESOURCE_URL exactly, or the API refuses every token. Configured, not
+    // read from the request: under `wrangler dev` the request URL carries the
+    // route's host rather than localhost's.
+    "MCP_RESOURCE_URL": "https://mcp.sytecheck.app/mcp",
     // Comma-separated browser origins allowed to call /mcp. Server-side clients
     // (Claude, ChatGPT, MCP Inspector's proxy) send no Origin and are unaffected.
     "ALLOWED_ORIGINS": "",

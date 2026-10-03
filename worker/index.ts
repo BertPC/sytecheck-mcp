@@ -6,6 +6,11 @@
  * caller's own bearer token, which is forwarded to the SyteCheck API as-is. The
  * Worker holds no credential of its own and decides nothing about who may do
  * what — the API answers that, exactly as it does for a direct API call.
+ *
+ * Users connect with OAuth, and the SyteCheck API is the authorization server
+ * (its docs/reference/OAUTH.md). This Worker's part is RFC 9728: publish where
+ * that server is, and answer an unauthenticated or dead token with a 401 that
+ * points to it, which is how a client knows to sign in or refresh.
  */
 
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
@@ -20,14 +25,74 @@ function jsonError(status: number, message: string, headers: HeadersInit = {}): 
   );
 }
 
+// What the remote server may be asked to do, in the API's vocabulary.
+const SCOPES = ["scans:read", "scans:write"];
+
+/** RFC 9728 places the document at the well-known path with the resource path appended. */
+const METADATA_PATHS = new Set([
+  "/.well-known/oauth-protected-resource",
+  "/.well-known/oauth-protected-resource/mcp",
+]);
+
 function bearerToken(request: Request): string | null {
   const match = /^Bearer\s+(\S+)$/i.exec(request.headers.get("authorization") ?? "");
   return match?.[1] ?? null;
 }
 
+/**
+ * The 401 challenge. `resource_metadata` is what sends a client to discovery;
+ * `error="invalid_token"` tells one holding a token that it must refresh.
+ */
+function unauthorized(
+  resource: string,
+  message: string,
+  invalidToken: boolean,
+): Response {
+  const metadata = `${new URL(resource).origin}/.well-known/oauth-protected-resource/mcp`;
+  const error = invalidToken ? ', error="invalid_token"' : "";
+  return jsonError(401, message, {
+    "WWW-Authenticate": `Bearer realm="sytecheck", resource_metadata="${metadata}"${error}`,
+  });
+}
+
+/**
+ * Whether the API rejects this token outright.
+ *
+ * Checked before serving, because the tools report an API 401 as a tool error
+ * inside a successful response — and an OAuth client only refreshes on an
+ * HTTP 401. Only a 401 counts: a 403 here can be a valid token that lacks
+ * `scans:read`, and an unreachable API is for the tools to report.
+ */
+async function apiRejectsToken(apiUrl: string, token: string): Promise<boolean> {
+  try {
+    const response = await fetch(`${apiUrl}/users/me`, {
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+    });
+    return response.status === 401;
+  } catch {
+    return false;
+  }
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    if (new URL(request.url).pathname !== "/mcp") {
+    const url = new URL(request.url);
+    const resource = env.MCP_RESOURCE_URL;
+    const config = loadServerConfig({ SYTECHECK_API_URL: env.SYTECHECK_API_URL });
+
+    if (request.method === "GET" && METADATA_PATHS.has(url.pathname)) {
+      return Response.json({
+        resource,
+        // The API is the authorization server; its issuer is its own origin.
+        authorization_servers: [config.apiUrl],
+        scopes_supported: SCOPES,
+        bearer_methods_supported: ["header"],
+        resource_name: "SyteCheck",
+        resource_documentation: "https://github.com/BertPC/sytecheck-mcp",
+      });
+    }
+
+    if (url.pathname !== "/mcp") {
       return new Response("Not found", { status: 404 });
     }
 
@@ -47,22 +112,21 @@ export default {
 
     const token = bearerToken(request);
     if (token === null) {
-      // A real 401 with a challenge is what tells a client to start its auth flow.
-      return jsonError(401, "Missing bearer token.", {
-        "WWW-Authenticate": 'Bearer realm="sytecheck"',
-      });
+      return unauthorized(resource, "Missing bearer token.", false);
+    }
+    if (await apiRejectsToken(config.apiUrl, token)) {
+      return unauthorized(resource, "Invalid or expired token.", true);
     }
 
     // run_scan polls the API until the scan finishes or this deadline passes.
-    // At the defaults that is at most ~25 subrequests, inside the free plan's
-    // 50 — so the wait settings are left at their defaults here.
-    const config = {
-      apiKey: token,
-      ...loadServerConfig({ SYTECHECK_API_URL: env.SYTECHECK_API_URL }),
-    };
-    const server = createServer(config, {
-      jsonSchemaValidator: new CfWorkerJsonSchemaValidator(),
-    });
+    // At the defaults that is at most ~25 subrequests plus the token check
+    // above, inside the free plan's 50 — so the wait settings stay at defaults.
+    const server = createServer(
+      { apiKey: token, ...config },
+      {
+        jsonSchemaValidator: new CfWorkerJsonSchemaValidator(),
+      },
+    );
     const transport = new WebStandardStreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
       enableJsonResponse: true,
