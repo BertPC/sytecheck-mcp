@@ -1,0 +1,90 @@
+{
+  "$schema": "https://raw.githubusercontent.com/anthropics/mcpb/main/schemas/mcpb-manifest-v0.4.schema.json",
+  "manifest_version": "0.4",
+  "name": "sytecheck-mcp",
+  "display_name": "SyteCheck",
+  "version": "0.1.1",
+  "description": "Scan a website for SEO, accessibility, performance and security issues, and read the report.",
+  "long_description": "SyteCheck scans a page across ten dimensions — HTML validity, SEO, broken links, accessibility (WCAG 2.2 AA via axe-core), performance (a real Lighthouse run), security headers, responsive layout, AI visibility, content freshness, and an AI critique of the visual design — and returns a scored, plain-language report.\n\nA free SyteCheck account works: three scans a month across three categories, no card. Note that running a scan spends quota, so `run_scan` is marked as not read-only and your client will ask before each one. If you want a key that can only read existing scans, mint a `scans:read` key instead.",
+  "author": {
+    "name": "Ascent Web Solutions",
+    "url": "https://sytecheck.app"
+  },
+  "homepage": "https://sytecheck.app/developers",
+  "documentation": "https://github.com/BertPC/sytecheck-mcp#readme",
+  "support": "https://github.com/BertPC/sytecheck-mcp/issues",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BertPC/sytecheck-mcp"
+  },
+  "license": "MIT",
+  "keywords": [
+    "website-audit",
+    "seo",
+    "accessibility",
+    "lighthouse",
+    "core-web-vitals",
+    "security-headers"
+  ],
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/server/index.js"],
+      "env": {
+        "SYTECHECK_API_KEY": "${user_config.api_key}",
+        "SYTECHECK_API_URL": "${user_config.api_url}"
+      }
+    }
+  },
+  "user_config": {
+    "api_key": {
+      "type": "string",
+      "title": "SyteCheck API key",
+      "description": "Created at Account -> API keys on sytecheck.app. Begins with sck_. Choose a scans:read key if you want reports read but no quota spent.",
+      "sensitive": true,
+      "required": true
+    },
+    "api_url": {
+      "type": "string",
+      "title": "API base URL",
+      "description": "Only change this to point at a non-production SyteCheck instance.",
+      "default": "https://api.sytecheck.app",
+      "required": false
+    }
+  },
+  "tools": [
+    {
+      "name": "run_scan",
+      "description": "Submit a URL and wait for the report. Spends quota."
+    },
+    {
+      "name": "get_scan_report",
+      "description": "Full findings for a scan id — the way to collect a scan run_scan left running."
+    },
+    {
+      "name": "list_scans",
+      "description": "Scan history, newest first, with filters."
+    },
+    {
+      "name": "get_scan_trends",
+      "description": "Score history per URL across repeat scans."
+    },
+    {
+      "name": "list_categories",
+      "description": "What SyteCheck can check, and what your plan includes."
+    },
+    {
+      "name": "get_account_usage",
+      "description": "Scans remaining this month, and when the quota resets."
+    }
+  ],
+  "prompts_generated": true,
+  "compatibility": {
+    "platforms": ["darwin", "win32", "linux"],
+    "runtimes": {
+      "node": ">=20"
+    }
+  }
+}
