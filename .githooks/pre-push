@@ -1,0 +1,7 @@
+#!/bin/sh
+# Runs the same checks as CI before anything leaves the machine, since direct
+# pushes to main bypass the required status checks.
+set -e
+npm run --silent lint
+npm run --silent format:check
+npm test --silent
