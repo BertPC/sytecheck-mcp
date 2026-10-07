@@ -85,4 +85,4 @@ One thing already in place for both is tool annotations — every tool in
 `src/tools.ts` carries `title`, `readOnlyHint` and `openWorldHint`, and `run_scan`
 is correctly marked not read-only, which Anthropic's review checks for.
 
-MCP Server work is on hold at this point, but planned for the nearish future, once the main product gets more serious traffic. If anyone out there is interested in leveraging this feature, please reach out to Erik at Ascent Web Solutions (owner of this repo).
+Hosted (remote) server work is on hold at this point, but planned for the nearish future, once the main product gets more serious traffic. If anyone out there is interested in leveraging this feature, please [reach out to Erik](https://sytecheck.app/contact) at Ascent Web Solutions.
