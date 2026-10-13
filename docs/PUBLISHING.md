@@ -5,6 +5,48 @@ Registry stores only metadata — it fetches the npm tarball to verify that we o
 the name we are claiming, so the npm version has to exist before the registry
 call is made.
 
+## When to release
+
+There is no schedule. Merging to `main` publishes nothing — users only see what
+is in a release — so cut one when something merged changes what a user
+_receives_. That depends on which of the three artifacts the change ends up in:
+
+| Artifact       | Carries                                                         |
+| -------------- | --------------------------------------------------------------- |
+| npm tarball    | `dist/`, `README.md`, `LICENSE`, `TRADEMARK.md`, `package.json` |
+| MCP Registry   | `server.json` only (descriptions, env vars, version pointer)    |
+| `.mcpb` bundle | `dist/`, the resolved `node_modules`, `mcpb/manifest.json`      |
+
+**Release** when a merged change touches:
+
+- `src/` (excluding `*.test.ts`) — anything that changes runtime behaviour.
+- `dependencies` in `package.json` — npm users resolve these ranges themselves,
+  so a range change only reaches them through a new version.
+- `server.json` or `mcpb/manifest.json` descriptions — a published version is
+  immutable on both npm and the registry, so wording fixes need a new version too.
+- `package-lock.json`, for a security fix in a runtime dependency. npm ignores a
+  package's lockfile when it is installed as a dependency, so npm users already
+  pick up fixed transitive versions on their next install — but the `.mcpb`
+  bundle ships the exact `node_modules` it was built with, and only a new
+  release replaces it.
+
+**Batch into the next release** README-only changes. The npm page shows the
+README from the last publish, so it lags, but nothing is broken.
+
+**Never needs a release:** `docs/`, `examples/`, `public-openapi.json`, tests,
+CI, and git hooks. None of them ship.
+
+Version numbers follow semver within `0.x`: a fix or dependency bump is a patch
+(`0.1.1` → `0.1.2`); a new tool, a renamed tool, or anything a user has to
+change their config for is a minor (`0.1.x` → `0.2.0`).
+
+To see what is waiting, diff against the last release's tag (step 5 creates it):
+
+```bash
+git log --oneline "v$(node -p 'require("./package.json").version')"..HEAD -- \
+  src package.json server.json mcpb README.md
+```
+
 ## The one thing that is easy to get wrong
 
 `package.json` must carry an `mcpName` field equal to `server.json`'s `name`:
@@ -28,18 +70,26 @@ package identifier and the version — but the check only helps if it runs befor
 ```bash
 # 1. Bump all three files together. They must state the same version.
 #    package.json:        "version"
-#    server.json:         "version" and packages[0].version
+#    server.json:         TWO places:  "version" and packages[0].version
 #    mcpb/manifest.json:  "version"
+#    src/index.ts         "VERSION"
 $EDITOR package.json server.json mcpb/manifest.json
 
 # 2. Verify. The manifest tests fail if the three files disagree.
 npm ci
 npm run lint && npm run format:check && npm test && npm run build
 
-# 3. Publish to npm. `prepublishOnly` rebuilds dist/ first.
+# 3. Publish to npm. `prepublishOnly` rebuilds dist/ first. npm logins expire,
+#    and a stale one fails the publish with a misleading 404, not a 401 —
+#    `npm whoami` first, and `npm login` if it errors.
+npm whoami || npm login
 npm publish --access public
 
-# 4. Publish the metadata.
+# 4. Publish the metadata. Registry logins expire too, so log in each time;
+#    key.pem and the TXT record are one-time setup (see "Authenticating to the
+#    MCP Registry" below). Run from wherever key.pem lives, or adjust the path.
+PRIVATE_KEY="$(openssl pkey -in key.pem -noout -text | grep -A3 "priv:" | tail -n +2 | tr -d ' :\n')"
+mcp-publisher login dns --domain sytecheck.com --private-key "${PRIVATE_KEY}"
 mcp-publisher publish
 
 # 5. Build the bundle and attach it to a GitHub release.
@@ -104,8 +154,8 @@ PRIVATE_KEY="$(openssl pkey -in key.pem -noout -text | grep -A3 "priv:" | tail -
 mcp-publisher login dns --domain sytecheck.com --private-key "${PRIVATE_KEY}"
 ```
 
-The record stays in place between releases; only the login is repeated, and only
-when the saved token has expired.
+The record stays in place between releases; only the login is repeated, which
+is why it is part of step 4 of the checklist.
 
 ## What updating the API does not require
 

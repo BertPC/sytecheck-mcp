@@ -3,7 +3,7 @@
   "name": "com.sytecheck/sytecheck-mcp",
   "title": "SyteCheck",
   "description": "Scan a website for SEO, accessibility, performance and security issues, and read the report.",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "websiteUrl": "https://sytecheck.app/developers",
   "repository": {
     "url": "https://github.com/BertPC/sytecheck-mcp",
@@ -21,7 +21,7 @@
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@ascentws/sytecheck-mcp",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "transport": {
         "type": "stdio"
       },
