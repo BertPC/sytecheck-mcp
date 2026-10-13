@@ -1,6 +1,6 @@
 {
   "name": "@ascentws/sytecheck-mcp",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "mcpName": "com.sytecheck/sytecheck-mcp",
   "description": "Model Context Protocol server for SyteCheck \u2014 run website audits and read their reports from Claude, Cursor, and any other MCP client.",
   "license": "MIT",
