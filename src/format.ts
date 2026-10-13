@@ -19,10 +19,7 @@ export function formatScanSummary(scan: Scan): string {
   if (scan.overall_score !== null) lines.push(`Overall score: ${scan.overall_score}/100`);
   if (scan.error_message) lines.push(`Error: ${scan.error_message}`);
   if (scan.quota_refunded_at) {
-    lines.push(
-      "This scan was voided before it ran (the site was unreachable), so it cost " +
-        "no quota and any scan credit was returned.",
-    );
+    lines.push("This scan failed, so it cost no quota and any scan credit was returned.");
   }
   return lines.join("\n");
 }
@@ -78,7 +75,14 @@ function formatCategory(category: CategoryReport): string {
     lines.push("", "Findings:");
     for (const f of findings.slice(0, MAX_FINDINGS_PER_CATEGORY)) {
       lines.push(`- [${f.severity}] ${f.title}`);
-      if (f.recommendation) lines.push(`  Fix: ${f.recommendation}`);
+      if (f.detail_locked) {
+        // Said outright, or a model asked for fixes will invent one.
+        lines.push(
+          "  Fix: withheld on this plan (available on paid plans or with a scan credit).",
+        );
+      } else if (f.recommendation) {
+        lines.push(`  Fix: ${f.recommendation}`);
+      }
     }
     if (findings.length > MAX_FINDINGS_PER_CATEGORY) {
       lines.push(`- …and ${findings.length - MAX_FINDINGS_PER_CATEGORY} more.`);

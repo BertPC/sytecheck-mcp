@@ -50,6 +50,8 @@ export interface Finding {
   detail: string;
   recommendation: string;
   snippet: string | null;
+  /** The plan withholds the fix: `recommendation` is empty and `snippet` null. */
+  detail_locked?: boolean;
 }
 
 export interface CategoryReport {
