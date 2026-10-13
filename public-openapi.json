@@ -491,8 +491,15 @@
           "required": true
         },
         "responses": {
-          "204": {
-            "description": "Successful Response"
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -725,6 +732,33 @@
         ]
       }
     },
+    "/users/me/export": {
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Export all account data",
+        "description": "Download everything held about the account as one JSON document: the profile,\nevery scan (including deleted scans not yet permanently removed) with its full\nresults, screenshot links, API-key metadata, and subscriptions. Password and key\nhashes are never included. Screenshot links expire after an hour.\n\nThe body is streamed. A file that does not end in `]}` was cut off by an error\nand should be requested again.\n\nRequires an interactive session. Available on every plan.",
+        "operationId": "export_me_users_me_export_get",
+        "responses": {
+          "200": {
+            "description": "The export, as JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountExportResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/scans/categories": {
       "get": {
         "tags": [
@@ -858,7 +892,7 @@
           "scans"
         ],
         "summary": "Submit a scan",
-        "description": "Queue a website scan and return immediately with its id and a `queued` status.\n\nA scan opens a real browser, runs a Lighthouse audit, and has screenshots\nreviewed by a vision model, so it takes a few minutes rather than seconds. Poll\n`GET /api/v1/scans/{scan_id}`, subscribe to `GET /api/v1/scans/{scan_id}/stream`,\nor supply a `webhook_url` to be notified on completion.\n\n**Each scan draws on your monthly quota.** Omit `categories` to run everything\nyour plan includes; request specific ones with `GET /api/v1/scans/categories`.\n\nRefusals are distinguishable and worth handling separately:\n\n- `403` \u2014 your plan does not include a requested category, webhooks, or the\n  scan credit you asked to spend. Retrying will not help.\n- `422` \u2014 the URL or a category id is not valid.\n- `429` \u2014 monthly quota, concurrent scan limit, or daily burst cap. A\n  `Retry-After` header says when to try again.\n\nA scan whose URL turns out to be unreachable is voided before any analysis runs:\nit is marked with `quota_refunded_at`, costs no quota, and returns any spent\ncredit.",
+        "description": "Queue a website scan and return immediately with its id and a `queued` status.\n\nA scan opens a real browser, runs a Lighthouse audit, and has screenshots\nreviewed by a vision model, so it takes a few minutes rather than seconds. Poll\n`GET /api/v1/scans/{scan_id}`, subscribe to `GET /api/v1/scans/{scan_id}/stream`,\nor supply a `webhook_url` to be notified on completion.\n\n**Each scan draws on your monthly quota.** Omit `categories` to run everything\nyour plan includes; request specific ones with `GET /api/v1/scans/categories`.\n\nRefusals are distinguishable and worth handling separately:\n\n- `403` \u2014 your plan does not include a requested category, webhooks, or the\n  scan credit you asked to spend. Retrying will not help.\n- `422` \u2014 the URL or a category id is not valid.\n- `429` \u2014 monthly quota, concurrent scan limit, or daily burst cap. A\n  `Retry-After` header says when to try again.\n\nA scan that ends `failed` \u2014 its URL unreachable, or every category errored or\nblocked \u2014 is voided: it is marked with `quota_refunded_at`, costs no quota, and\nreturns any spent credit.",
         "operationId": "create_scan_api_v1_scans_post",
         "security": [
           {
@@ -1161,7 +1195,7 @@
           "scans"
         ],
         "summary": "Get a scan report",
-        "description": "Return the full report: an executive summary with recommended actions, a scored\nbreakdown, and per-category findings with a recommendation for each.\n\nAvailable once the scan is finished; answers `409` while it is still running.\n\nReport text is stored in English and translated on demand \u2014 pass `?lang=de` or\nsend an `Accept-Language` header. A translation failure falls back to English\nrather than erroring.\n\nEach category carries its own status. `pass`, `warn` and `fail` reflect its\nscore; `error` means the analysis failed; `blocked` means the site's bot\nprotection refused automated access. Both `error` and `blocked` carry a null\nscore and are excluded from the overall score rather than counted as failures.",
+        "description": "Return the full report: an executive summary with recommended actions, a scored\nbreakdown, and per-category findings.\n\nEach finding carries a recommendation, except where the account's plan withholds\nit: a finding with `detail_locked: true` reports what is wrong (`title`, `detail`,\n`severity`) with an empty `recommendation` and no `snippet`. The free plan locks\naccessibility fixes this way; every paid plan, and any scan bought with a one-off\nscan credit, returns them in full.\n\nAvailable once the scan is finished; answers `409` while it is still running.\n\nReport text is stored in English and translated on demand \u2014 pass `?lang=de` or\nsend an `Accept-Language` header. A translation failure falls back to English\nrather than erroring.\n\nEach category carries its own status. `pass`, `warn` and `fail` reflect its\nscore; `error` means the analysis failed; `blocked` means the site's bot\nprotection refused automated access. Both `error` and `blocked` carry a null\nscore and are excluded from the overall score rather than counted as failures.",
         "operationId": "get_scan_report_api_v1_scans__scan_id__report_get",
         "security": [
           {
@@ -1742,6 +1776,55 @@
         "title": "AcceptInvitationBody",
         "description": "Take possession of an admin-created account by setting its first password."
       },
+      "AccountExportResponse": {
+        "properties": {
+          "exported_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Exported At"
+          },
+          "screenshot_urls_expire_in_seconds": {
+            "type": "integer",
+            "title": "Screenshot Urls Expire In Seconds",
+            "description": "Screenshot links stop working after this long; export again for fresh ones."
+          },
+          "account": {
+            "$ref": "#/components/schemas/ExportAccount"
+          },
+          "scans": {
+            "items": {
+              "$ref": "#/components/schemas/ExportScan"
+            },
+            "type": "array",
+            "title": "Scans"
+          },
+          "api_keys": {
+            "items": {
+              "$ref": "#/components/schemas/ExportApiKey"
+            },
+            "type": "array",
+            "title": "Api Keys"
+          },
+          "subscriptions": {
+            "items": {
+              "$ref": "#/components/schemas/ExportSubscription"
+            },
+            "type": "array",
+            "title": "Subscriptions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "exported_at",
+          "screenshot_urls_expire_in_seconds",
+          "account",
+          "scans",
+          "api_keys",
+          "subscriptions"
+        ],
+        "title": "AccountExportResponse",
+        "description": "Everything SyteCheck holds about the caller, as one machine-readable document."
+      },
       "ApiKeyCreate": {
         "properties": {
           "label": {
@@ -2087,7 +2170,19 @@
               }
             ],
             "title": "Current Password",
-            "description": "The account's current password. Required unless the account signs in with Google and has no password set."
+            "description": "The account's current password. Required when the account has a password."
+          },
+          "google_credential": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Google Credential",
+            "description": "A fresh Google ID token from Sign In With Google, for the Google account linked to this one. Required when the account has no password."
           }
         },
         "type": "object",
@@ -2209,6 +2304,496 @@
         "title": "ExecutiveSummary",
         "description": "Claude-generated plain-English overview and prioritised actions for a scan."
       },
+      "ExportAccount": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "email_verified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email Verified At"
+          },
+          "google_account_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Google Account Id"
+          },
+          "tier": {
+            "type": "string",
+            "title": "Tier"
+          },
+          "preferences": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Preferences"
+          },
+          "scan_credits": {
+            "type": "integer",
+            "title": "Scan Credits"
+          },
+          "scan_credit_purchased_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scan Credit Purchased At"
+          },
+          "plan_downgraded_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plan Downgraded At"
+          },
+          "billing_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Billing Customer Id"
+          },
+          "signup_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signup Source"
+          },
+          "signup_source_detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signup Source Detail"
+          },
+          "signup_attribution": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signup Attribution"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "email",
+          "email_verified_at",
+          "google_account_id",
+          "tier",
+          "preferences",
+          "scan_credits",
+          "scan_credit_purchased_at",
+          "plan_downgraded_at",
+          "billing_customer_id",
+          "signup_source",
+          "signup_source_detail",
+          "signup_attribution",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ExportAccount",
+        "description": "The account row, minus credential material and internal counters."
+      },
+      "ExportApiKey": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "key_prefix": {
+            "type": "string",
+            "title": "Key Prefix"
+          },
+          "scopes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scopes"
+          },
+          "request_count": {
+            "type": "integer",
+            "title": "Request Count"
+          },
+          "scan_count": {
+            "type": "integer",
+            "title": "Scan Count"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "last_used_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Used At"
+          },
+          "revoked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revoked At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "label",
+          "key_prefix",
+          "scopes",
+          "request_count",
+          "scan_count",
+          "created_at",
+          "last_used_at",
+          "revoked_at"
+        ],
+        "title": "ExportApiKey",
+        "description": "API key metadata. The secret itself is never stored, so it cannot be exported."
+      },
+      "ExportScan": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "categories_requested": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Categories Requested"
+          },
+          "overall_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Overall Score"
+          },
+          "executive_summary": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Executive Summary"
+          },
+          "webhook_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Webhook Url"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "used_scan_credit": {
+            "type": "boolean",
+            "title": "Used Scan Credit"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "deleted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deleted At"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/ExportScanResult"
+            },
+            "type": "array",
+            "title": "Results"
+          },
+          "screenshots": {
+            "items": {
+              "$ref": "#/components/schemas/ExportScreenshot"
+            },
+            "type": "array",
+            "title": "Screenshots"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "url",
+          "label",
+          "status",
+          "categories_requested",
+          "overall_score",
+          "executive_summary",
+          "webhook_url",
+          "error_message",
+          "used_scan_credit",
+          "created_at",
+          "completed_at",
+          "deleted_at",
+          "results",
+          "screenshots"
+        ],
+        "title": "ExportScan",
+        "description": "A scan and everything recorded about it."
+      },
+      "ExportScanResult": {
+        "properties": {
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Completed At"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
+          }
+        },
+        "type": "object",
+        "required": [
+          "category",
+          "status",
+          "score",
+          "completed_at",
+          "result"
+        ],
+        "title": "ExportScanResult",
+        "description": "One category's result, including the full analyzer output we retain."
+      },
+      "ExportScreenshot": {
+        "properties": {
+          "breakpoint": {
+            "type": "string",
+            "title": "Breakpoint"
+          },
+          "captured_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Captured At"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "breakpoint",
+          "captured_at",
+          "url"
+        ],
+        "title": "ExportScreenshot",
+        "description": "A screenshot, reachable for a limited time through a signed URL.\n\n``url`` is None if the link could not be signed; export again to retry."
+      },
+      "ExportSubscription": {
+        "properties": {
+          "tier": {
+            "type": "string",
+            "title": "Tier"
+          },
+          "billing_period": {
+            "type": "string",
+            "title": "Billing Period"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "current_period_end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Period End"
+          },
+          "cancel_at_period_end": {
+            "type": "boolean",
+            "title": "Cancel At Period End"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tier",
+          "billing_period",
+          "status",
+          "current_period_end",
+          "cancel_at_period_end"
+        ],
+        "title": "ExportSubscription",
+        "description": "Our record of a subscription. Payment records are held by Paddle, not us."
+      },
       "FindingResponse": {
         "properties": {
           "id": {
@@ -2246,6 +2831,11 @@
               }
             ],
             "title": "Snippet"
+          },
+          "detail_locked": {
+            "type": "boolean",
+            "title": "Detail Locked",
+            "default": false
           }
         },
         "type": "object",
@@ -2264,6 +2854,16 @@
           "credential": {
             "type": "string",
             "title": "Credential"
+          },
+          "attribution": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SignupAttribution"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -2295,6 +2895,17 @@
           "password": {
             "type": "string",
             "title": "Password"
+          },
+          "turnstile_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Turnstile Token"
           }
         },
         "type": "object",
@@ -2370,6 +2981,17 @@
             "type": "string",
             "format": "email",
             "title": "Email"
+          },
+          "turnstile_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Turnstile Token"
           }
         },
         "type": "object",
@@ -2395,12 +3017,10 @@
           },
           "monthly_price_usd": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Monthly Price Usd"
           },
           "annual_price_usd": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Annual Price Usd"
           },
           "monthly_scans": {
@@ -2646,8 +3266,7 @@
           "monthly_price_usd": {
             "anyOf": [
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -2658,8 +3277,7 @@
           "annual_price_usd": {
             "anyOf": [
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -2751,7 +3369,6 @@
           },
           "one_off_scan_price_usd": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "One Off Scan Price Usd"
           },
           "one_off_scan_paddle_price_id": {
@@ -2858,6 +3475,27 @@
             "maxLength": 128,
             "minLength": 12,
             "title": "Password"
+          },
+          "attribution": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SignupAttribution"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "turnstile_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Turnstile Token"
           }
         },
         "type": "object",
@@ -3044,6 +3682,11 @@
               }
             ],
             "title": "Quota Refunded At"
+          },
+          "used_scan_credit": {
+            "type": "boolean",
+            "title": "Used Scan Credit",
+            "default": false
           },
           "created_at": {
             "type": "string",
@@ -3325,6 +3968,11 @@
             ],
             "title": "Quota Refunded At"
           },
+          "used_scan_credit": {
+            "type": "boolean",
+            "title": "Used Scan Credit",
+            "default": false
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -3492,6 +4140,73 @@
         ],
         "title": "ScreenshotResponse",
         "description": "One screenshot entry \u2014 storage key plus an optional pre-signed URL."
+      },
+      "SignupAttribution": {
+        "properties": {
+          "referrer_host": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Referrer Host"
+          },
+          "utm_source": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Utm Source"
+          },
+          "utm_medium": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Utm Medium"
+          },
+          "utm_campaign": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Utm Campaign"
+          },
+          "landing_path": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Landing Path"
+          }
+        },
+        "type": "object",
+        "title": "SignupAttribution",
+        "description": "What the browser saw on the visit that led to sign-up.\n\nCaptured by the SPA on landing (``frontend/src/utils/attribution.ts``) and sent\nwith the registration request. Every field is optional: a direct visit has no\nreferrer and most links carry no UTM tags."
       },
       "SubscriptionChangeRequest": {
         "properties": {
@@ -3848,6 +4563,49 @@
                 "type": "null"
               }
             ]
+          },
+          "signup_source": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "search_google",
+                  "search_bing",
+                  "search_duckduckgo",
+                  "search_other",
+                  "ai_chatgpt",
+                  "ai_claude",
+                  "ai_perplexity",
+                  "ai_gemini",
+                  "ai_copilot",
+                  "ai_other",
+                  "social",
+                  "friend",
+                  "article",
+                  "directory",
+                  "ascent",
+                  "other"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signup Source",
+            "description": "Where the user heard about SyteCheck."
+          },
+          "signup_source_detail": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signup Source Detail",
+            "description": "Free text accompanying an \"other\" answer."
           }
         },
         "type": "object",

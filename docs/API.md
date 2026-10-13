@@ -145,6 +145,7 @@ The response returns immediately as **`201 Created`** with status `queued`:
   "error_message": null,
   "webhook_url": null,
   "quota_refunded_at": null,
+  "used_scan_credit": false,
   "created_at": "2026-06-14T12:00:00Z",
   "completed_at": null
 }
@@ -206,12 +207,12 @@ intermittent. If **every** requested category is blocked or errored, the scan's
 top-level `status` is `failed` and `error_message` explains why.
 
 A scan can also fail *before* any category runs, when the URL cannot be reached at
-all (DNS, TCP, or TLS failure). Such a scan carries a non-null `quota_refunded_at`
-and **costs you nothing** — it does not consume monthly quota, and a one-off scan
-credit spent on it is returned. A scan whose categories all failed or were blocked
-did run, so it is charged and `quota_refunded_at` stays `null`. Note that a
-preflight failure sends **no webhook**, since delivery happens at the end of the
-fan-out that never started — poll for this case.
+all (DNS, TCP, or TLS failure). Either way, a `failed` scan carries a non-null
+`quota_refunded_at` and **costs you nothing** — it does not consume monthly quota,
+and a one-off scan credit spent on it is returned. A scan with at least one usable
+category is `complete` and charged. Note that a preflight failure sends **no
+webhook**, since delivery happens at the end of the fan-out that never started —
+poll for this case.
 
 ---
 
@@ -438,8 +439,10 @@ email, mint a key, and you can call every endpoint below — no subscription req
 
 An API key grants **no allowance of its own**: it reaches exactly the monthly quota and
 the category set your plan already has. On Free that is 3 scans a month across `visual`,
-`seo`, and `content_freshness` — enough to try an integration end to end against a real
-site before deciding whether to pay for one.
+`accessibility`, and `seo` — enough to try an integration end to end against a real
+site before deciding whether to pay for one. Free also withholds the *fix* on each
+accessibility finding: it comes back with `detail_locked: true`, an empty
+`recommendation`, and no `snippet`, while the title, severity, and detail are intact.
 
 **Webhooks are the exception, and require an Agency plan.** Passing a `webhook_url` on
 any other plan returns `403`; the scan itself is fine on every plan, so poll or use the
