@@ -90,7 +90,8 @@ npm publish --access public
 #    MCP Registry" below). Run from wherever key.pem lives, or adjust the path.
 PRIVATE_KEY="$(openssl pkey -in key.pem -noout -text | grep -A3 "priv:" | tail -n +2 | tr -d ' :\n')"
 mcp-publisher login dns --domain sytecheck.com --private-key "${PRIVATE_KEY}"
-# Wait a bit for the NPM publish above to make it to MCP registry, or you'll get a 400 response  
+# Wait a bit for the NPM publish above to make it to MCP registry, or you'll
+# get a 400 response
 mcp-publisher publish
 
 # 5. Build the bundle and attach it to a GitHub release.
