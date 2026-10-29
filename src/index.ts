@@ -18,7 +18,7 @@ import { registerTools } from "./tools.js";
 
 // Kept in step with package.json by hand — importing it would put a JSON file
 // outside `rootDir` into the build. `manifest.test.ts` fails if they drift.
-const VERSION = "0.1.3";
+const VERSION = "0.1.4";
 
 async function main(): Promise<void> {
   const config = loadConfig();

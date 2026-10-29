@@ -3,7 +3,7 @@
   "manifest_version": "0.4",
   "name": "sytecheck-mcp",
   "display_name": "SyteCheck",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Scan a website for SEO, accessibility, performance and security issues, and read the report.",
   "long_description": "SyteCheck scans a page across ten dimensions — HTML validity, SEO, broken links, accessibility (WCAG 2.2 AA via axe-core), performance (a real Lighthouse run), security headers, responsive layout, AI visibility, content freshness, and an AI critique of the visual design — and returns a scored, plain-language report.\n\nA free SyteCheck account works: three scans a month across three categories, no card. Note that running a scan spends quota, so `run_scan` is marked as not read-only and your client will ask before each one. If you want a key that can only read existing scans, mint a `scans:read` key instead.",
   "author": {
